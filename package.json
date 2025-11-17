@@ -4,10 +4,10 @@
   "description": "Patternfly cli for scaffolding projects, performing code mods, and running project related tasks",
   "author": "Red Hat",
   "license": "MIT",
-  "main": "index.js",
+  "main": "dist/cli.js",
   "type": "module",
   "bin": {
-    "patternfly-cli": "./index.js"
+    "patternfly-cli": "./dist/cli.js"
   },
   "scripts": {
     "build": "tsc",
