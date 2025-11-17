@@ -89,7 +89,13 @@ program
 
     } catch (error) {
       console.error('❌ An error occurred:');
-      console.error(error.stderr || error.message);
+      if (error instanceof Error) {
+        console.error(error.message);
+      } else if (error && typeof error === 'object' && 'stderr' in error) {
+        console.error((error as { stderr?: string }).stderr || String(error));
+      } else {
+        console.error(String(error));
+      }
       
       // Clean up the created directory if an error occurred
       if (await fs.pathExists(projectPath)) {
