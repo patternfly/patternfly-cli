@@ -1,7 +1,8 @@
 {
   // Visit https://aka.ms/tsconfig to read more about this file
   "compilerOptions": {
-    "module": "ESNext",
+    "module": "NodeNext",
+    "moduleResolution": "nodenext",
     // File Layout
     "rootDir": "./src",
     "outDir": "./dist",

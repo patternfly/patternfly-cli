@@ -6,6 +6,13 @@ import inquirer from 'inquirer';
 import fs from 'fs-extra';
 import path from 'path';
 
+type ProjectData = {
+  name: string,
+  version: string,
+  description: string,
+  author: string
+}
+
 program
   .version('1.0.0')
   .command('create')
@@ -55,7 +62,7 @@ program
         },
       ];
 
-      const answers = await inquirer.prompt(questions);
+      const answers: ProjectData = await inquirer.prompt(questions);
 
       // 5. Update the package.json in the new project
       const pkgJsonPath = path.join(projectPath, 'package.json');
