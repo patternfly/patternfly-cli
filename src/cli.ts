@@ -67,7 +67,12 @@ program
     try {
       
       // 3. Clone the repository
-      await execa('git', ['clone', templateRepoUrl, projectPath]);
+      const cloneArgs = ['clone'];
+      if (template.options && Array.isArray(template.options)) {
+        cloneArgs.push(...template.options);
+      }
+      cloneArgs.push(templateRepoUrl, projectPath);
+      await execa('git', cloneArgs);
       console.log('✅ Template cloned successfully.');
 
       // 4. Remove the .git folder from the *new* project
