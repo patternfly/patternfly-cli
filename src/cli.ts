@@ -46,7 +46,7 @@ program
       templateName = templateAnswer.templateName;
     }
     
-    // 1. Look up the template by name
+    // Look up the template by name
     const template = templates.find(t => t.name === templateName);
     if (!template) {
       console.error(`❌ Template "${templateName}" not found.\n`);
@@ -60,13 +60,13 @@ program
     
     const templateRepoUrl = template.repo;
     
-    // 2. Define the full path for the new project
+    // Define the full path for the new project
     const projectPath = path.resolve(projectDirectory);
     console.log(`Cloning template "${templateName}" from ${templateRepoUrl} into ${projectPath}...`);
 
     try {
       
-      // 3. Clone the repository
+      // Clone the repository
       const cloneArgs = ['clone'];
       if (template.options && Array.isArray(template.options)) {
         cloneArgs.push(...template.options);
@@ -75,11 +75,11 @@ program
       await execa('git', cloneArgs);
       console.log('✅ Template cloned successfully.');
 
-      // 4. Remove the .git folder from the *new* project
+      // Remove the .git folder from the *new* project
       await fs.remove(path.join(projectPath, '.git'));
       console.log('🧹 Cleaned up template .git directory.');
 
-      // 5. Ask user for customization details
+      // Ask user for customization details
       const questions = [
         {
           type: 'input',
@@ -109,7 +109,7 @@ program
 
       const answers: ProjectData = await inquirer.prompt(questions);
 
-      // 6. Update the package.json in the new project
+      // Update the package.json in the new project
       const pkgJsonPath = path.join(projectPath, 'package.json');
       
       if (await fs.pathExists(pkgJsonPath)) {
@@ -128,12 +128,12 @@ program
         console.log('ℹ️ No package.json found in template, skipping customization.');
       }
 
-      // 7. Install dependencies
+      // Install dependencies
       console.log('📦 Installing dependencies... (This may take a moment)');
       await execa('npm', ['install'], { cwd: projectPath });
       console.log('✅ Dependencies installed.');
 
-      // 8. Final message
+      // Let the user know the project was created successfully
       console.log('\n✨ Project created successfully! ✨\n');
       console.log(`To get started:`);
       console.log(`  cd ${projectDirectory}`);
