@@ -160,10 +160,17 @@ program
 program
   .command('list')
   .description('List all available templates')
-  .action(() => {
+  .option('--verbose', 'List all available templates with verbose information')
+  .action((options) => {
     console.log('\n📋 Available templates:\n');
     templates.forEach(template => {
-      console.log(`  ${template.name.padEnd(20)} - ${template.description}`);
+      console.log(`  ${template.name.padEnd(20)} - ${template.description}`)
+      if (options.verbose) {
+        console.log(`    Repo URL: ${template.repo}`);
+        if (template.options && Array.isArray(template.options)) {
+          console.log(`    Checkout Options: ${template.options.join(', ')}`);
+        }
+      }
     });
     console.log('');
   });
