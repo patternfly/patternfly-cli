@@ -17,8 +17,8 @@ program
   .version('1.0.0')
   .command('create')
   .description('Create a new project from a git template')
-  .argument('<template-repo-url>', 'The URL of the git template repository')
   .argument('<project-directory>', 'The directory to create the project in')
+  .argument('<template-repo-url>', 'The URL of the template repository to clone')
   .action(async (templateRepoUrl, projectDirectory) => {
     
     // 1. Define the full path for the new project
@@ -26,6 +26,7 @@ program
     console.log(`Cloning template from ${templateRepoUrl} into ${projectPath}...`);
 
     try {
+      
       // 2. Clone the repository
       await execa('git', ['clone', templateRepoUrl, projectPath]);
       console.log('✅ Template cloned successfully.');
@@ -109,6 +110,37 @@ program
         await fs.remove(projectPath);
         console.log('🧹 Cleaned up failed project directory.');
       }
+    }
+  });
+
+program
+  .command('codemod')
+  .description('Run PatternFly codemods on a directory to transform code to the latest PatternFly patterns')
+  .argument('[path]', 'The path to the source directory to run codemods on (defaults to "src")')
+  .option('--fix', 'Automatically apply fixes to files instead of just showing what would be changed')
+  .action(async (srcPath, options) => {
+    const targetPath = srcPath || 'src';
+    const resolvedPath = path.resolve(targetPath);
+    console.log(`Running PatternFly codemods on ${resolvedPath}...`);
+
+    try {
+      const args = ['@patternfly/pf-codemods'];
+      if (options.fix) {
+        args.push('--fix');
+      }
+      args.push(resolvedPath);
+      await execa('npx', args, { stdio: 'inherit' });
+      console.log('✅ Codemods completed successfully.');
+    } catch (error) {
+      console.error('❌ An error occurred while running codemods:');
+      if (error instanceof Error) {
+        console.error(error.message);
+      } else if (error && typeof error === 'object' && 'stderr' in error) {
+        console.error((error as { stderr?: string }).stderr || String(error));
+      } else {
+        console.error(String(error));
+      }
+      process.exit(1);
     }
   });
 

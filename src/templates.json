@@ -1,0 +1,14 @@
+{
+"templates": [
+    {
+        "name": "starter",
+        "description": "A starter template for Patternfly react typescript project",
+        "repo": "https://github.com/patternfly/patternfly-react-seed.git"
+    },
+    {
+    "name": "upgrade",
+    "description": "Upgrades your project to the latest version of Patternfly",
+    "commands": ["npx @patternfly/pf-codemods ./path-to-src"]
+    }
+]
+}

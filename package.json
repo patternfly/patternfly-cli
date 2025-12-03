@@ -25,6 +25,7 @@
     ]
   },
   "dependencies": {
+    "0g": "^0.4.2",
     "commander": "^12.1.0",
     "execa": "^9.3.0",
     "fs-extra": "^11.2.0",
