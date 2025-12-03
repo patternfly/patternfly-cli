@@ -26,11 +26,17 @@ patternfly-cli [command]
 
 ### Available Commands
 
-- **`scaffold`**: Create a new project from a template.
-- **`codemod`**: Apply code modifications to your project.
-- **`run`**: Execute predefined project tasks.
+- **`create`**: Create a new project from the available templates.
+- **`update`**: Update your project to a newer version .
 
-## Development
+
+## Development / Installation
+
+### Install Dependencies
+
+```sh
+npm install
+```
 
 ### Build
 
@@ -40,11 +46,12 @@ To build the project, run:
 npm run build
 ```
 
-### Test
+### Installing the cli
 
-Currently, no tests are specified. You can add tests and run them using:
+After building the cli you can install the cli globally by running the following command:
 
 ```sh
-npm test
+npm install -g
 ```
 
+After that you can now execute the cli via ```patternfly-cli``` command in the terminal. We are currently in the process of moving this to npmjs once we this ready for v 1.0.0
