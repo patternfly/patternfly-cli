@@ -158,6 +158,17 @@ program
   });
 
 program
+  .command('list')
+  .description('List all available templates')
+  .action(() => {
+    console.log('\n📋 Available templates:\n');
+    templates.forEach(template => {
+      console.log(`  ${template.name.padEnd(20)} - ${template.description}`);
+    });
+    console.log('');
+  });
+
+program
   .command('update')
   .description('Run PatternFly codemods on a directory to transform code to the latest PatternFly patterns')
   .argument('[path]', 'The path to the source directory to run codemods on (defaults to "src")')
