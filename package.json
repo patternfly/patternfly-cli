@@ -1,6 +1,6 @@
 {
   "name": "patternfly-cli",
-  "version": "1.0.0",
+  "version": "1.0.0-prerelease.1",
   "description": "Patternfly cli for scaffolding projects, performing code mods, and running project related tasks",
   "author": "Red Hat",
   "license": "MIT",
