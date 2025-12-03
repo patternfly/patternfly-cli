@@ -5,6 +5,7 @@ import { execa } from 'execa';
 import inquirer from 'inquirer';
 import fs from 'fs-extra';
 import path from 'path';
+import templates from './templates.js';
 
 type ProjectData = {
   name: string,
@@ -18,24 +19,62 @@ program
   .command('create')
   .description('Create a new project from a git template')
   .argument('<project-directory>', 'The directory to create the project in')
-  .argument('<template-repo-url>', 'The URL of the template repository to clone')
-  .action(async (templateRepoUrl, projectDirectory) => {
+  .argument('[template-name]', 'The name of the template to use')
+  .action(async (projectDirectory, templateName) => {
     
-    // 1. Define the full path for the new project
+    // If template name is not provided, show available templates and let user select
+    if (!templateName) {
+      console.log('\n📋 Available templates:\n');
+      templates.forEach(t => {
+        console.log(`  ${t.name.padEnd(12)} - ${t.description}`);
+      });
+      console.log('');
+      
+      const templateQuestion = [
+        {
+          type: 'list',
+          name: 'templateName',
+          message: 'Select a template:',
+          choices: templates.map(t => ({
+            name: `${t.name} - ${t.description}`,
+            value: t.name
+          }))
+        }
+      ];
+      
+      const templateAnswer = await inquirer.prompt(templateQuestion);
+      templateName = templateAnswer.templateName;
+    }
+    
+    // 1. Look up the template by name
+    const template = templates.find(t => t.name === templateName);
+    if (!template) {
+      console.error(`❌ Template "${templateName}" not found.\n`);
+      console.log('📋 Available templates:\n');
+      templates.forEach(t => {
+        console.log(`  ${t.name.padEnd(12)} - ${t.description}`);
+      });
+      console.log('');
+      process.exit(1);
+    }
+    
+    const templateRepoUrl = template.repo;
+    
+    // 2. Define the full path for the new project
     const projectPath = path.resolve(projectDirectory);
-    console.log(`Cloning template from ${templateRepoUrl} into ${projectPath}...`);
+    console.log(`Cloning template "${templateName}" from ${templateRepoUrl} into ${projectPath}...`);
 
     try {
       
-      // 2. Clone the repository
+      // 3. Clone the repository
       await execa('git', ['clone', templateRepoUrl, projectPath]);
       console.log('✅ Template cloned successfully.');
 
-      // 3. Remove the .git folder from the *new* project
+      // 4. Remove the .git folder from the *new* project
       await fs.remove(path.join(projectPath, '.git'));
       console.log('🧹 Cleaned up template .git directory.');
 
-      // 4. Ask user for customization details
+      // 5. Ask user for customization details
       const questions = [
         {
           type: 'input',
@@ -65,7 +104,7 @@ program
 
       const answers: ProjectData = await inquirer.prompt(questions);
 
-      // 5. Update the package.json in the new project
+      // 6. Update the package.json in the new project
       const pkgJsonPath = path.join(projectPath, 'package.json');
       
       if (await fs.pathExists(pkgJsonPath)) {
@@ -84,12 +123,12 @@ program
         console.log('ℹ️ No package.json found in template, skipping customization.');
       }
 
-      // 6. Install dependencies
+      // 7. Install dependencies
       console.log('📦 Installing dependencies... (This may take a moment)');
       await execa('npm', ['install'], { cwd: projectPath });
       console.log('✅ Dependencies installed.');
 
-      // 7. Final message
+      // 8. Final message
       console.log('\n✨ Project created successfully! ✨\n');
       console.log(`To get started:`);
       console.log(`  cd ${projectDirectory}`);
@@ -114,34 +153,41 @@ program
   });
 
 program
-  .command('codemod')
+  .command('update')
   .description('Run PatternFly codemods on a directory to transform code to the latest PatternFly patterns')
   .argument('[path]', 'The path to the source directory to run codemods on (defaults to "src")')
   .option('--fix', 'Automatically apply fixes to files instead of just showing what would be changed')
   .action(async (srcPath, options) => {
     const targetPath = srcPath || 'src';
     const resolvedPath = path.resolve(targetPath);
-    console.log(`Running PatternFly codemods on ${resolvedPath}...`);
+    const commands = ['@patternfly/pf-codemods', '@patternfly/class-name-updater'];
+    
+    console.log(`Running PatternFly updates on ${resolvedPath}...`);
 
-    try {
-      const args = ['@patternfly/pf-codemods'];
-      if (options.fix) {
-        args.push('--fix');
+    for (const command of commands) {
+      try {
+        console.log(`\n📦 Running ${command}...`);
+        const args = [command];
+        if (options.fix) {
+          args.push('--fix');
+        }
+        args.push(resolvedPath);
+        await execa('npx', args, { stdio: 'inherit' });
+        console.log(`✅ ${command} completed successfully.`);
+      } catch (error) {
+        console.error(`❌ An error occurred while running ${command}:`);
+        if (error instanceof Error) {
+          console.error(error.message);
+        } else if (error && typeof error === 'object' && 'stderr' in error) {
+          console.error((error as { stderr?: string }).stderr || String(error));
+        } else {
+          console.error(String(error));
+        }
+        process.exit(1);
       }
-      args.push(resolvedPath);
-      await execa('npx', args, { stdio: 'inherit' });
-      console.log('✅ Codemods completed successfully.');
-    } catch (error) {
-      console.error('❌ An error occurred while running codemods:');
-      if (error instanceof Error) {
-        console.error(error.message);
-      } else if (error && typeof error === 'object' && 'stderr' in error) {
-        console.error((error as { stderr?: string }).stderr || String(error));
-      } else {
-        console.error(String(error));
-      }
-      process.exit(1);
     }
+    
+    console.log('\n✨ All updates completed successfully! ✨');
   });
 
 program.parse(process.argv);
