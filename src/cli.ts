@@ -72,7 +72,7 @@ program
         cloneArgs.push(...template.options);
       }
       cloneArgs.push(templateRepoUrl, projectPath);
-      await execa('git', cloneArgs);
+      await execa('git', cloneArgs, { stdio: 'inherit' });
       console.log('✅ Template cloned successfully.');
 
       // Remove the .git folder from the *new* project
@@ -128,9 +128,10 @@ program
         console.log('ℹ️ No package.json found in template, skipping customization.');
       }
 
+      const packageManager = template.packageManager || "npm";
       // Install dependencies
       console.log('📦 Installing dependencies... (This may take a moment)');
-      await execa('npm', ['install'], { cwd: projectPath });
+      await execa(packageManager, ['install'], { cwd: projectPath, stdio: 'inherit' });
       console.log('✅ Dependencies installed.');
 
       // Let the user know the project was created successfully
