@@ -2,18 +2,21 @@ const templates = [
     {
         name: "starter",
         description: "A starter template for Patternfly react typescript project",
-        repo: "https://github.com/patternfly/patternfly-react-seed.git"
+        repo: "https://github.com/patternfly/patternfly-react-seed.git",
+        packageManager: "yarn"
     },
     {
         name: "compass-starter",
         description: "A starter template for Patternfly compass theme typescript project",
         repo: "https://github.com/patternfly/patternfly-react-seed.git",
-        options: ["--single-branch", "--branch", "compass_theme"]
+        options: ["--single-branch", "--branch", "compass_theme"],
+        packageManager: "yarn"
     },
     {
         name: "nextjs-starter",
         description: "A starter template for Patternfly nextjs project",
-        repo: "git@github.com:patternfly/patternfly-nextjs-seed.git"
+        repo: "git@github.com:patternfly/patternfly-nextjs-seed.git",
+        packageManager: "yarn"
     },
     {
         name: "ai_enabled_starter",
