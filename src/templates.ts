@@ -1,4 +1,12 @@
-const templates = [
+export type Template = {
+  name: string;
+  description: string;
+  repo: string;
+  options?: string[];
+  packageManager?: string;
+};
+
+const templates: Template[] = [
     {
         name: "starter",
         description: "A starter template for Patternfly react typescript project",

@@ -1,0 +1,14 @@
+[
+  {
+    "name": "custom-one",
+    "description": "A custom template",
+    "repo": "https://github.com/example/custom-one.git"
+  },
+  {
+    "name": "custom-with-options",
+    "description": "Custom with clone options",
+    "repo": "https://github.com/example/custom.git",
+    "options": ["--depth", "1"],
+    "packageManager": "pnpm"
+  }
+]

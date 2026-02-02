@@ -23,7 +23,21 @@
     "moduleFileExtensions": [
       "ts",
       "js"
-    ]
+    ],
+    "transform": {
+      "^.+\\.tsx?$": [
+        "ts-jest",
+        {
+          "tsconfig": {
+            "module": "commonjs",
+            "moduleResolution": "node"
+          }
+        }
+      ]
+    },
+    "moduleNameMapper": {
+      "^(\\.\\./.*)\\.js$": "$1"
+    }
   },
   "dependencies": {
     "0g": "^0.4.2",
