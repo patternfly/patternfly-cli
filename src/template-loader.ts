@@ -2,6 +2,7 @@ import fs from 'fs-extra';
 import path from 'path';
 import type { Template } from './templates.js';
 
+/** Functoin used to load custom templates from a JSON file */
 export function loadCustomTemplates(filePath: string): Template[] {
   const resolved = path.resolve(filePath);
   if (!fs.existsSync(resolved)) {
@@ -64,6 +65,7 @@ export function loadCustomTemplates(filePath: string): Template[] {
   return result;
 }
 
+/** Function used to merge built-in templates with custom templates */
 export function mergeTemplates(builtIn: Template[], customFilePath?: string): Template[] {
   if (!customFilePath) {
     return builtIn;

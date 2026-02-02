@@ -5,16 +5,22 @@ import { execa } from 'execa';
 import inquirer from 'inquirer';
 import fs from 'fs-extra';
 import path from 'path';
-import templates from './templates.js';
+import { defaultTemplates }from './templates.js';
 import { mergeTemplates } from './template-loader.js';
 
+/** Project data provided by the user */
 type ProjectData = {
-  name: string,
+  /** Project name */
+  name: string, 
+  /** Project version */
   version: string,
+  /** Project description */
   description: string,
+  /** Project author */
   author: string
 }
 
+/** Command to create a new project */
 program
   .version('1.0.0')
   .command('create')
@@ -23,7 +29,7 @@ program
   .argument('[template-name]', 'The name of the template to use')
   .option('-t, --template-file <path>', 'Path to a JSON file with custom templates (same format as built-in)')
   .action(async (projectDirectory, templateName, options) => {
-    const templatesToUse = mergeTemplates(templates, options?.templateFile);
+    const templatesToUse = mergeTemplates(defaultTemplates, options?.templateFile);
 
     // If template name is not provided, show available templates and let user select
     if (!templateName) {
@@ -161,13 +167,14 @@ program
     }
   });
 
+/** Command to list all available templates */
 program
   .command('list')
   .description('List all available templates')
   .option('--verbose', 'List all available templates with verbose information')
   .option('-t, --template-file <path>', 'Include templates from a JSON file (same format as built-in)')
   .action((options) => {
-    const templatesToUse = mergeTemplates(templates, options?.templateFile);
+    const templatesToUse = mergeTemplates(defaultTemplates, options?.templateFile);
     console.log('\n📋 Available templates:\n');
     templatesToUse.forEach(template => {
       console.log(`  ${template.name.padEnd(20)} - ${template.description}`)
@@ -181,6 +188,7 @@ program
     console.log('');
   });
 
+/** Command to run PatternFly codemods on a directory */
 program
   .command('update')
   .description('Run PatternFly codemods on a directory to transform code to the latest PatternFly patterns')

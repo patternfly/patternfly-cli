@@ -1,12 +1,17 @@
 export type Template = {
+  /** Template name */
   name: string;
+  /** Template description */
   description: string;
+  /** Template repository URL */
   repo: string;
+  /** Template checkout options */
   options?: string[];
+  /** Template package manager */
   packageManager?: string;
 };
 
-const templates: Template[] = [
+export const defaultTemplates: Template[] = [
     {
         name: "starter",
         description: "A starter template for Patternfly react typescript project",
@@ -34,4 +39,4 @@ const templates: Template[] = [
     }
 ]
 
-export default templates;
+export default defaultTemplates;
