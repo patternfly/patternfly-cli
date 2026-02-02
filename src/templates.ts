@@ -32,10 +32,10 @@ export const defaultTemplates: Template[] = [
         packageManager: "yarn"
     },
     {
-        name: "ai_enabled_starter",
-        description: "A starter template for Patternfly ai enabled project",
-        repo: "https://github.com/patternfly/patternfly-react-seed.git",
-        options: ["--single-branch", "--branch", "ai_enabled"]
+        name: "rhoai_enabled_starter",
+        description: "A starter template for Red Hat Open AI enabled project",
+        repo: "https://gitlab.cee.redhat.com/uxd/prototypes/rhoai",
+        options: ["--single-branch", "--branch", "3.2"]
     }
 ]
 
