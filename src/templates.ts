@@ -1,4 +1,17 @@
-const templates = [
+export type Template = {
+  /** Template name */
+  name: string;
+  /** Template description */
+  description: string;
+  /** Template repository URL */
+  repo: string;
+  /** Template checkout options */
+  options?: string[];
+  /** Template package manager */
+  packageManager?: string;
+};
+
+export const defaultTemplates: Template[] = [
     {
         name: "starter",
         description: "A starter template for Patternfly react typescript project",
@@ -19,11 +32,11 @@ const templates = [
         packageManager: "yarn"
     },
     {
-        name: "ai_enabled_starter",
-        description: "A starter template for Patternfly ai enabled project",
-        repo: "https://github.com/patternfly/patternfly-react-seed.git",
-        options: ["--single-branch", "--branch", "ai_enabled"]
+        name: "rhoai_enabled_starter",
+        description: "A starter template for Red Hat Open AI enabled project",
+        repo: "https://gitlab.cee.redhat.com/uxd/prototypes/rhoai",
+        options: ["--single-branch", "--branch", "3.2"]
     }
 ]
 
-export default templates;
+export default defaultTemplates;
