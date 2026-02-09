@@ -25,11 +25,25 @@ program
   .version('1.0.0')
   .command('create')
   .description('Create a new project from a git template')
-  .argument('<project-directory>', 'The directory to create the project in')
+  .argument('[project-directory]', 'The directory to create the project in')
   .argument('[template-name]', 'The name of the template to use')
   .option('-t, --template-file <path>', 'Path to a JSON file with custom templates (same format as built-in)')
+  .option('--ssh', 'Use SSH URL for cloning the template repository')
   .action(async (projectDirectory, templateName, options) => {
     const templatesToUse = mergeTemplates(defaultTemplates, options?.templateFile);
+
+    // If project directory is not provided, prompt for it
+    if (!projectDirectory) {
+      const projectDirAnswer = await inquirer.prompt([
+        {
+          type: 'input',
+          name: 'projectDirectory',
+          message: 'Please provide the directory where you want to create the project?',
+          default: 'my-app',
+        },
+      ]);
+      projectDirectory = projectDirAnswer.projectDirectory;
+    }
 
     // If template name is not provided, show available templates and let user select
     if (!templateName) {
@@ -66,8 +80,22 @@ program
       console.log('');
       process.exit(1);
     }
-    
-    const templateRepoUrl = template.repo;
+
+    // If --ssh was not passed, prompt whether to use SSH
+    let useSSH = options?.ssh;
+    if (useSSH === undefined && template.repoSSH) {
+      const sshAnswer = await inquirer.prompt([
+        {
+          type: 'confirm',
+          name: 'useSSH',
+          message: 'Use SSH URL for cloning?',
+          default: false,
+        },
+      ]);
+      useSSH = sshAnswer.useSSH;
+    }
+
+    const templateRepoUrl = useSSH && template.repoSSH ? template.repoSSH : template.repo;
     
     // Define the full path for the new project
     const projectPath = path.resolve(projectDirectory);
@@ -93,25 +121,25 @@ program
         {
           type: 'input',
           name: 'name',
-          message: 'Project name?',
+          message: 'What is the project name?',
           default: path.basename(projectPath),
         },
         {
           type: 'input',
           name: 'version',
-          message: 'Version?',
+          message: 'What version number would you like to use?',
           default: '1.0.0',
         },
         {
           type: 'input',
           name: 'description',
-          message: 'Description?',
+          message: 'What is the project description?',
           default: '',
         },
         {
           type: 'input',
           name: 'author',
-          message: 'Author?',
+          message: 'Who is the author of the project?',
           default: '',
         },
       ];
