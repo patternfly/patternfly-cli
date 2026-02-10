@@ -1,6 +1,8 @@
-jest.mock('execa');
+jest.mock('execa', () => ({
+  __esModule: true,
+  execa: jest.fn(),
+}));
 
-import { execa } from 'execa';
 import {
   sanitizeRepoName,
   checkGhAuth,
@@ -8,7 +10,7 @@ import {
   createRepo,
 } from '../github.js';
 
-const mockExeca = execa as jest.MockedFunction<typeof execa>;
+const { execa: mockExeca } = require('execa');
 
 describe('sanitizeRepoName', () => {
   it('returns lowercase name with invalid chars replaced by hyphen', () => {
@@ -93,7 +95,7 @@ describe('checkGhAuth', () => {
       stdout: '  octocat  ',
       stderr: '',
       exitCode: 0,
-    } as Awaited<ReturnType<typeof execa>>);
+    });
 
     const result = await checkGhAuth();
 
@@ -135,9 +137,7 @@ describe('createRepo', () => {
 
   beforeEach(() => {
     mockExeca.mockReset();
-    mockExeca.mockResolvedValue({ stdout: '', stderr: '', exitCode: 0 } as Awaited<
-      ReturnType<typeof execa>
-    >);
+    mockExeca.mockResolvedValue({ stdout: '', stderr: '', exitCode: 0 });
   });
 
   it('calls gh repo create with expected args and returns repo URL', async () => {
