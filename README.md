@@ -16,6 +16,14 @@ To install the CLI globally, use npm:
 npm install -g patternfly-cli
 ```
 
+## Prerequisites
+
+Before using the Patternfly CLI, install the following:
+
+- **Node.js and npm** (v20–24) — [npm](https://www.npmjs.com/) · [Node.js downloads](https://nodejs.org/)
+- **Corepack** — enable with `corepack enable` (included with Node.js). Run the command after installing npm.
+- **GitHub CLI** — [Install GitHub CLI](https://cli.github.com/)
+  
 ## Usage
 
 After installation, you can use the CLI by running:

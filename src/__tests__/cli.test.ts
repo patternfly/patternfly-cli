@@ -2,6 +2,7 @@ import path from 'path';
 import fs from 'fs-extra';
 import { loadCustomTemplates, mergeTemplates } from '../template-loader.js';
 import templates from '../templates.js';
+import { sanitizeRepoName } from '../github.js';
 
 const fixturesDir = path.join(process.cwd(), 'src', '__tests__', 'fixtures');
 
@@ -144,5 +145,22 @@ describe('mergeTemplates', () => {
     } finally {
       await fs.remove(customPath);
     }
+  });
+});
+
+describe('GitHub support (create command)', () => {
+  it('derives repo name from package name the same way the create command does', () => {
+    // Create command uses sanitizeRepoName(pkgJson.name) for initial repo name
+    expect(sanitizeRepoName('my-app')).toBe('my-app');
+    expect(sanitizeRepoName('@patternfly/my-project')).toBe('my-project');
+    expect(sanitizeRepoName('My Project Name')).toBe('my-project-name');
+  });
+
+  it('builds repo URL in the format used by the create command', () => {
+    // Create command builds https://github.com/${auth.username}/${repoName}
+    const username = 'testuser';
+    const repoName = sanitizeRepoName('@org/my-package');
+    const repoUrl = `https://github.com/${username}/${repoName}`;
+    expect(repoUrl).toBe('https://github.com/testuser/my-package');
   });
 });
