@@ -140,7 +140,7 @@ describe('createRepo', () => {
     mockExeca.mockResolvedValue({ stdout: '', stderr: '', exitCode: 0 });
   });
 
-  it('calls gh repo create with expected args and returns repo URL', async () => {
+  it('initializes git and calls gh repo create with expected args and returns repo URL', async () => {
     const url = await createRepo({
       repoName: 'my-app',
       projectPath,
@@ -148,19 +148,30 @@ describe('createRepo', () => {
     });
 
     expect(url).toBe('https://github.com/octocat/my-app.git');
-    expect(mockExeca).toHaveBeenCalledWith(
+    expect(mockExeca).toHaveBeenCalledTimes(4);
+    expect(mockExeca).toHaveBeenNthCalledWith(1, 'git', ['init'], {
+      stdio: 'inherit',
+      cwd: projectPath,
+    });
+    expect(mockExeca).toHaveBeenNthCalledWith(2, 'git', ['add', '.'], {
+      stdio: 'inherit',
+      cwd: projectPath,
+    });
+    expect(mockExeca).toHaveBeenNthCalledWith(3, 'git', ['commit', '-m', 'Initial commit'], {
+      stdio: 'inherit',
+      cwd: projectPath,
+    });
+    expect(mockExeca).toHaveBeenNthCalledWith(
+      4,
       'gh',
       [
         'repo',
         'create',
         'my-app',
         '--public',
-        '--source',
-        projectPath,
-        '--description',
-        '',
-        '--remote',
-        'origin',
+        `--source=${projectPath}`,
+        '--remote=origin',
+        '--push',
       ],
       { stdio: 'inherit', cwd: projectPath },
     );
@@ -174,9 +185,10 @@ describe('createRepo', () => {
       description: 'My cool project',
     });
 
-    expect(mockExeca).toHaveBeenCalledWith(
+    expect(mockExeca).toHaveBeenNthCalledWith(
+      4,
       'gh',
-      expect.arrayContaining(['--description', 'My cool project']),
+      expect.arrayContaining(['--description=My cool project']),
       expect.any(Object),
     );
   });

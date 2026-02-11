@@ -1,3 +1,5 @@
+import fs from 'fs-extra';
+import path from 'path';
 import { execa } from 'execa';
 
 /** 
@@ -56,13 +58,28 @@ export async function createRepo(options: {
   username: string;
   description?: string;
 }): Promise<string> {
+  const gitDir = path.join(options.projectPath, '.git');
+  if (!(await fs.pathExists(gitDir))) {
+    await execa('git', ['init'], { stdio: 'inherit', cwd: options.projectPath });
+    await execa('git', ['add', '.'], { stdio: 'inherit', cwd: options.projectPath });
+    await execa('git', ['commit', '-m', 'Initial commit'], {
+      stdio: 'inherit',
+      cwd: options.projectPath,
+    });
+  }
+
   const args = [
-    'repo', 'create', options.repoName,
+    'repo',
+    'create',
+    options.repoName,
     '--public',
-    '--source', options.projectPath,
-    '--description', options.description || '',
-    '--remote', 'origin',
+    `--source=${options.projectPath}`,
+    '--remote=origin',
+    '--push',
   ];
+  if (options.description) {
+    args.push(`--description=${options.description}`);
+  }
   await execa('gh', args, { stdio: 'inherit', cwd: options.projectPath });
   return `https://github.com/${options.username}/${options.repoName}.git`;
 }
