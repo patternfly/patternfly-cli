@@ -9,6 +9,7 @@ import { defaultTemplates } from './templates.js';
 import { mergeTemplates } from './template-loader.js';
 import { checkGhAuth, createRepo, repoExists as ghRepoExists, sanitizeRepoName } from './github.js';
 import { runSave } from './save.js';
+import { runLoad } from './load.js';
 
 /** Project data provided by the user */
 type ProjectData = {
@@ -346,6 +347,20 @@ program
     const cwd = repoPath ? path.resolve(repoPath) : process.cwd();
     try {
       await runSave(cwd);
+    } catch {
+      process.exit(1);
+    }
+  });
+
+/** Command to load latest updates from the remote */
+program
+  .command('load')
+  .description('Pull the latest updates from GitHub')
+  .argument('[path]', 'Path to the repository (defaults to current directory)')
+  .action(async (repoPath) => {
+    const cwd = repoPath ? path.resolve(repoPath) : process.cwd();
+    try {
+      await runLoad(cwd);
     } catch {
       process.exit(1);
     }
