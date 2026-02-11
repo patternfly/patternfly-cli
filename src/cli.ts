@@ -8,6 +8,7 @@ import path from 'path';
 import { defaultTemplates } from './templates.js';
 import { mergeTemplates } from './template-loader.js';
 import { checkGhAuth, createRepo, repoExists as ghRepoExists, sanitizeRepoName } from './github.js';
+import { runSave } from './save.js';
 
 /** Project data provided by the user */
 type ProjectData = {
@@ -334,6 +335,20 @@ program
     }
     
     console.log('\n✨ All updates completed successfully! ✨');
+  });
+
+/** Command to save changes: check for changes, prompt to commit, and push */
+program
+  .command('save')
+  .description('Check for changes, optionally commit them with a message, and push to the current branch')
+  .argument('[path]', 'Path to the repository (defaults to current directory)')
+  .action(async (repoPath) => {
+    const cwd = repoPath ? path.resolve(repoPath) : process.cwd();
+    try {
+      await runSave(cwd);
+    } catch {
+      process.exit(1);
+    }
   });
 
 program.parse(process.argv);
