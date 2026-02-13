@@ -304,4 +304,48 @@ program
     }
   });
 
+/** Command to install, build, and start the project */
+program
+  .command('start')
+  .description('Install dependencies, build, and start the project')
+  .argument('[path]', 'Path to the project directory (defaults to current directory)')
+  .option('-p, --package-manager <manager>', 'Package manager to use (npm, yarn, or pnpm)', 'npm')
+  .action(async (projectPath, options) => {
+    const cwd = projectPath ? path.resolve(projectPath) : process.cwd();
+    const packageManager = options.packageManager ?? 'npm';
+
+    const validManagers = ['npm', 'yarn', 'pnpm'];
+    if (!validManagers.includes(packageManager)) {
+      console.error(`❌ Invalid package manager "${packageManager}". Use one of: ${validManagers.join(', ')}`);
+      process.exit(1);
+    }
+
+    const installArgs = packageManager === 'yarn' ? [] : ['install'];
+    const buildArgs = packageManager === 'yarn' ? ['build'] : ['run', 'build'];
+    const startArgs = ['start'];
+
+    try {
+      console.log(`📦 Installing dependencies (${packageManager})...`);
+      await execa(packageManager, installArgs, { cwd, stdio: 'inherit' });
+      console.log('✅ Dependencies installed.');
+
+      console.log('🔨 Building...');
+      await execa(packageManager, buildArgs, { cwd, stdio: 'inherit' });
+      console.log('✅ Build complete.');
+
+      console.log('🚀 Starting...');
+      await execa(packageManager, startArgs, { cwd, stdio: 'inherit' });
+    } catch (error) {
+      console.error('❌ An error occurred:');
+      if (error instanceof Error) {
+        console.error(error.message);
+      } else if (error && typeof error === 'object' && 'stderr' in error) {
+        console.error((error as { stderr?: string }).stderr || String(error));
+      } else {
+        console.error(String(error));
+      }
+      process.exit(1);
+    }
+  });
+
 program.parse(process.argv);
