@@ -17,14 +17,20 @@ jest.mock('inquirer', () => ({
   },
 }));
 
+jest.mock('../github.js', () => ({
+  offerAndCreateGitHubRepo: jest.fn(),
+}));
+
 import fs from 'fs-extra';
 import { execa } from 'execa';
 import inquirer from 'inquirer';
+import { offerAndCreateGitHubRepo } from '../github.js';
 import { runSave } from '../save.js';
 
 const mockPathExists = fs.pathExists as jest.MockedFunction<typeof fs.pathExists>;
 const mockExeca = execa as jest.MockedFunction<typeof execa>;
 const mockPrompt = inquirer.prompt as jest.MockedFunction<typeof inquirer.prompt>;
+const mockOfferAndCreateGitHubRepo = offerAndCreateGitHubRepo as jest.MockedFunction<typeof offerAndCreateGitHubRepo>;
 
 const cwd = '/tmp/my-repo';
 
@@ -125,6 +131,7 @@ describe('runSave', () => {
       .mockResolvedValueOnce({ stdout: ' M file.ts', stderr: '', exitCode: 0 })
       .mockResolvedValueOnce({ stdout: '', stderr: '', exitCode: 0 })
       .mockResolvedValueOnce({ stdout: '', stderr: '', exitCode: 0 })
+      .mockResolvedValueOnce({ stdout: 'https://github.com/user/repo.git', stderr: '', exitCode: 0 })
       .mockResolvedValueOnce({ stdout: '', stderr: '', exitCode: 0 });
     mockPrompt
       .mockResolvedValueOnce({ saveChanges: true })
@@ -132,7 +139,7 @@ describe('runSave', () => {
 
     await runSave(cwd);
 
-    expect(mockExeca).toHaveBeenCalledTimes(4);
+    expect(mockExeca).toHaveBeenCalledTimes(5);
     expect(mockExeca).toHaveBeenNthCalledWith(1, 'git', ['status', '--porcelain'], {
       cwd,
       encoding: 'utf8',
@@ -146,7 +153,8 @@ describe('runSave', () => {
       '-m',
       'Fix bug in save command',
     ], { cwd, stdio: 'inherit' });
-    expect(mockExeca).toHaveBeenNthCalledWith(4, 'git', ['push'], {
+    expect(mockExeca).toHaveBeenNthCalledWith(4, 'git', ['remote', 'get-url', 'origin'], expect.any(Object));
+    expect(mockExeca).toHaveBeenNthCalledWith(5, 'git', ['push'], {
       cwd,
       stdio: 'inherit',
     });
@@ -161,6 +169,7 @@ describe('runSave', () => {
       .mockResolvedValueOnce({ stdout: ' M file.ts', stderr: '', exitCode: 0 })
       .mockResolvedValueOnce({ stdout: '', stderr: '', exitCode: 0 })
       .mockResolvedValueOnce({ stdout: '', stderr: '', exitCode: 0 })
+      .mockResolvedValueOnce({ stdout: 'https://github.com/user/repo.git', stderr: '', exitCode: 0 })
       .mockRejectedValueOnce(Object.assign(new Error('push failed'), { exitCode: 128 }));
 
     mockPrompt
@@ -200,6 +209,7 @@ describe('runSave', () => {
       .mockResolvedValueOnce({ stdout: ' M file.ts', stderr: '', exitCode: 0 })
       .mockResolvedValueOnce({ stdout: '', stderr: '', exitCode: 0 })
       .mockResolvedValueOnce({ stdout: '', stderr: '', exitCode: 0 })
+      .mockResolvedValueOnce({ stdout: 'https://github.com/user/repo.git', stderr: '', exitCode: 0 })
       .mockRejectedValueOnce(new Error('network error'));
 
     mockPrompt
@@ -213,6 +223,50 @@ describe('runSave', () => {
     );
     expect(consoleErrorSpy).toHaveBeenCalledWith(
       expect.stringContaining('network error'),
+    );
+  });
+
+  it('when no remote origin, offers to create GitHub repo and throws if user does not create', async () => {
+    mockPathExists.mockResolvedValue(true);
+    mockExeca
+      .mockResolvedValueOnce({ stdout: ' M file.ts', stderr: '', exitCode: 0 })
+      .mockResolvedValueOnce({ stdout: '', stderr: '', exitCode: 0 })
+      .mockResolvedValueOnce({ stdout: '', stderr: '', exitCode: 0 })
+      .mockRejectedValueOnce(new Error('no remote'));
+    mockOfferAndCreateGitHubRepo.mockResolvedValue(false);
+
+    mockPrompt
+      .mockResolvedValueOnce({ saveChanges: true })
+      .mockResolvedValueOnce({ message: 'WIP' });
+
+    await expect(runSave(cwd)).rejects.toThrow('No remote origin');
+    expect(mockOfferAndCreateGitHubRepo).toHaveBeenCalledWith(cwd);
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Set a remote'),
+    );
+    expect(mockExeca).not.toHaveBeenCalledWith('git', ['push'], expect.any(Object));
+  });
+
+  it('when no remote origin and user creates GitHub repo, pushes successfully', async () => {
+    mockPathExists.mockResolvedValue(true);
+    mockExeca
+      .mockResolvedValueOnce({ stdout: ' M file.ts', stderr: '', exitCode: 0 })
+      .mockResolvedValueOnce({ stdout: '', stderr: '', exitCode: 0 })
+      .mockResolvedValueOnce({ stdout: '', stderr: '', exitCode: 0 })
+      .mockRejectedValueOnce(new Error('no remote'))
+      .mockResolvedValueOnce({ stdout: '', stderr: '', exitCode: 0 });
+    mockOfferAndCreateGitHubRepo.mockResolvedValue(true);
+
+    mockPrompt
+      .mockResolvedValueOnce({ saveChanges: true })
+      .mockResolvedValueOnce({ message: 'WIP' });
+
+    await runSave(cwd);
+
+    expect(mockOfferAndCreateGitHubRepo).toHaveBeenCalledWith(cwd);
+    expect(mockExeca).toHaveBeenCalledWith('git', ['push'], { cwd, stdio: 'inherit' });
+    expect(consoleLogSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Changes saved and pushed to GitHub successfully'),
     );
   });
 });

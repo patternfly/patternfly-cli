@@ -2,6 +2,7 @@ import path from 'path';
 import fs from 'fs-extra';
 import { execa } from 'execa';
 import inquirer from 'inquirer';
+import { offerAndCreateGitHubRepo } from './github.js';
 
 /**
  * Runs the save flow: verify repo, check for changes, prompt to commit, then add/commit/push.
@@ -61,6 +62,25 @@ export async function runSave(cwd: string): Promise<void> {
   try {
     await execa('git', ['add', '.'], { cwd, stdio: 'inherit' });
     await execa('git', ['commit', '-m', commitMessage], { cwd, stdio: 'inherit' });
+
+    // If no remote origin, offer to create a GitHub repository before pushing
+    let hasOrigin = false;
+    try {
+      await execa('git', ['remote', 'get-url', 'origin'], { cwd, reject: true });
+      hasOrigin = true;
+    } catch {
+      // no origin
+    }
+    if (!hasOrigin) {
+      const created = await offerAndCreateGitHubRepo(cwd);
+      if (!created) {
+        console.error(
+          '\n❌ Push skipped. Set a remote (e.g. "patternfly-cli init" or "git remote add origin <url>") then try save again.\n',
+        );
+        throw new Error('No remote origin');
+      }
+    }
+
     await execa('git', ['push'], { cwd, stdio: 'inherit' });
     console.log('\n✅ Changes saved and pushed to GitHub successfully.\n');
   } catch (err) {
@@ -73,7 +93,7 @@ export async function runSave(cwd: string): Promise<void> {
       } else {
         console.error('\n❌ Save or push failed. See the output above for details.\n');
       }
-    } else {
+    } else if (!(err instanceof Error && err.message === 'No remote origin')) {
       console.error('\n❌ An error occurred:');
       if (err instanceof Error) console.error(`   ${err.message}\n`);
       else console.error(`   ${String(err)}\n`);

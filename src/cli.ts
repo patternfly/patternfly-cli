@@ -7,7 +7,7 @@ import fs from 'fs-extra';
 import path from 'path';
 import { defaultTemplates } from './templates.js';
 import { mergeTemplates } from './template-loader.js';
-import { checkGhAuth, createRepo, repoExists as ghRepoExists, sanitizeRepoName } from './github.js';
+import { offerAndCreateGitHubRepo } from './github.js';
 import { runSave } from './save.js';
 import { runLoad } from './load.js';
 
@@ -175,84 +175,7 @@ program
       console.log('✅ Dependencies installed.');
 
       // Optional: Create GitHub repository
-      const { createGitHub } = await inquirer.prompt([
-        {
-          type: 'confirm',
-          name: 'createGitHub',
-          message: 'Would you like to create a GitHub repository for this project?',
-          default: false,
-        },
-      ]);
-
-      if (createGitHub) {
-        const auth = await checkGhAuth();
-        if (!auth.ok) {
-          console.log(`\n⚠️  ${auth.message}`);
-          console.log('   Skipping GitHub repository creation.\n');
-        } else {
-          const pkgJsonForGh = await fs.readJson(pkgJsonPath);
-          const projectName = pkgJsonForGh.name as string;
-          let repoName = sanitizeRepoName(projectName);
-
-          // If repo already exists, ask for alternative name until we get one that doesn't exist or user skips
-          while (await ghRepoExists(auth.username, repoName)) {
-            console.log(`\n⚠️  A repository named "${repoName}" already exists on GitHub under your account.\n`);
-            const { alternativeName } = await inquirer.prompt([
-              {
-                type: 'input',
-                name: 'alternativeName',
-                message: 'Enter an alternative repository name (or leave empty to skip creating a GitHub repository):',
-                default: '',
-              },
-            ]);
-            if (!alternativeName?.trim()) {
-              repoName = '';
-              break;
-            }
-            repoName = sanitizeRepoName(alternativeName.trim());
-          }
-
-          if (repoName) {
-            const repoUrl = `https://github.com/${auth.username}/${repoName}`;
-            console.log('\n📋 The following will happen:\n');
-            console.log(`   • A new public repository will be created at: ${repoUrl}`);
-            console.log(`   • The repository will be created under your GitHub account (${auth.username}).`);
-            console.log(`   • The repository URL will be added to your package.json.`);
-            console.log(`   • The remote "origin" will be set to this repository (you can push when ready).\n`);
-
-            const { confirmCreate } = await inquirer.prompt([
-              {
-                type: 'confirm',
-                name: 'confirmCreate',
-                message: 'Do you want to proceed with creating this repository?',
-                default: true,
-              },
-            ]);
-
-            if (!confirmCreate) {
-              console.log('\n❌ GitHub repository was not created. Your local project is ready at:');
-              console.log(`   ${projectPath}\n`);
-            } else {
-              try {
-                const createdUrl = await createRepo({
-                  repoName,
-                  projectPath,
-                  username: auth.username,
-                  ...(pkgJsonForGh.description && { description: String(pkgJsonForGh.description) }),
-                });
-                pkgJsonForGh.repository = { type: 'git', url: createdUrl };
-                await fs.writeJson(pkgJsonPath, pkgJsonForGh, { spaces: 2 });
-                console.log('\n✅ GitHub repository created successfully!');
-                console.log(`   ${repoUrl}`);
-                console.log('   Repository URL has been added to your package.json.\n');
-              } catch (err) {
-                console.error('\n❌ Failed to create GitHub repository:');
-                if (err instanceof Error) console.error(`   ${err.message}\n`);
-              }
-            }
-          }
-        }
-      }
+      await offerAndCreateGitHubRepo(projectPath);
 
       // Let the user know the project was created successfully
       console.log('\n✨ Project created successfully! ✨\n');
@@ -276,6 +199,21 @@ program
         console.log('🧹 Cleaned up failed project directory.');
       }
     }
+  });
+
+/** Command to initialize a project and optionally create a GitHub repository */
+program
+  .command('init')
+  .description('Initialize the current directory (or path) as a git repo and optionally create a GitHub repository')
+  .argument('[path]', 'Path to the project directory (defaults to current directory)')
+  .action(async (dirPath) => {
+    const cwd = dirPath ? path.resolve(dirPath) : process.cwd();
+    const gitDir = path.join(cwd, '.git');
+    if (!(await fs.pathExists(gitDir))) {
+      await execa('git', ['init'], { stdio: 'inherit', cwd });
+      console.log('✅ Git repository initialized.\n');
+    }
+    await offerAndCreateGitHubRepo(cwd);
   });
 
 /** Command to list all available templates */

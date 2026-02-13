@@ -36,8 +36,12 @@
       ]
     },
     "moduleNameMapper": {
-      "^(\\.\\./.*)\\.js$": "$1"
-    }
+      "^(\\.\\./.*)\\.js$": "$1",
+      "^(\\./.*)\\.js$": "$1"
+    },
+    "transformIgnorePatterns": [
+      "/node_modules/(?!inquirer)"
+    ]
   },
   "dependencies": {
     "0g": "^0.4.2",

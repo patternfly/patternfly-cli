@@ -3,6 +3,11 @@ jest.mock('execa', () => ({
   execa: jest.fn(),
 }));
 
+jest.mock('inquirer', () => ({
+  __esModule: true,
+  default: { prompt: jest.fn() },
+}));
+
 import {
   sanitizeRepoName,
   checkGhAuth,
@@ -141,6 +146,13 @@ describe('createRepo', () => {
   });
 
   it('initializes git and calls gh repo create with expected args and returns repo URL', async () => {
+    mockExeca
+      .mockResolvedValueOnce({ stdout: '', stderr: '', exitCode: 0 })
+      .mockRejectedValueOnce(new Error('no HEAD'))
+      .mockResolvedValueOnce({ stdout: '', stderr: '', exitCode: 0 })
+      .mockResolvedValueOnce({ stdout: '', stderr: '', exitCode: 0 })
+      .mockResolvedValueOnce({ stdout: '', stderr: '', exitCode: 0 });
+
     const url = await createRepo({
       repoName: 'my-app',
       projectPath,
@@ -148,21 +160,22 @@ describe('createRepo', () => {
     });
 
     expect(url).toBe('https://github.com/octocat/my-app.git');
-    expect(mockExeca).toHaveBeenCalledTimes(4);
+    expect(mockExeca).toHaveBeenCalledTimes(5);
     expect(mockExeca).toHaveBeenNthCalledWith(1, 'git', ['init'], {
       stdio: 'inherit',
       cwd: projectPath,
     });
-    expect(mockExeca).toHaveBeenNthCalledWith(2, 'git', ['add', '.'], {
+    expect(mockExeca).toHaveBeenNthCalledWith(2, 'git', ['rev-parse', '--verify', 'HEAD'], expect.any(Object));
+    expect(mockExeca).toHaveBeenNthCalledWith(3, 'git', ['add', '.'], {
       stdio: 'inherit',
       cwd: projectPath,
     });
-    expect(mockExeca).toHaveBeenNthCalledWith(3, 'git', ['commit', '-m', 'Initial commit'], {
+    expect(mockExeca).toHaveBeenNthCalledWith(4, 'git', ['commit', '-m', 'Initial commit'], {
       stdio: 'inherit',
       cwd: projectPath,
     });
     expect(mockExeca).toHaveBeenNthCalledWith(
-      4,
+      5,
       'gh',
       [
         'repo',
@@ -178,6 +191,13 @@ describe('createRepo', () => {
   });
 
   it('passes description when provided', async () => {
+    mockExeca
+      .mockResolvedValueOnce({ stdout: '', stderr: '', exitCode: 0 })
+      .mockRejectedValueOnce(new Error('no HEAD'))
+      .mockResolvedValueOnce({ stdout: '', stderr: '', exitCode: 0 })
+      .mockResolvedValueOnce({ stdout: '', stderr: '', exitCode: 0 })
+      .mockResolvedValueOnce({ stdout: '', stderr: '', exitCode: 0 });
+
     await createRepo({
       repoName: 'my-app',
       projectPath,
@@ -186,7 +206,7 @@ describe('createRepo', () => {
     });
 
     expect(mockExeca).toHaveBeenNthCalledWith(
-      4,
+      5,
       'gh',
       expect.arrayContaining(['--description=My cool project']),
       expect.any(Object),

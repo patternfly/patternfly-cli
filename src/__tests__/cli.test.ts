@@ -1,3 +1,8 @@
+jest.mock('inquirer', () => ({
+  __esModule: true,
+  default: { prompt: jest.fn() },
+}));
+
 import path from 'path';
 import fs from 'fs-extra';
 import { loadCustomTemplates, mergeTemplates } from '../template-loader.js';
