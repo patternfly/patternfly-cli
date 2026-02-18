@@ -76,6 +76,7 @@ export async function createRepo(options: {
   projectPath: string;
   username: string;
   description?: string;
+  visibility?: 'public' | 'private';
 }): Promise<string> {
   const gitDir = path.join(options.projectPath, '.git');
   if (!(await fs.pathExists(gitDir))) {
@@ -83,11 +84,12 @@ export async function createRepo(options: {
   }
   await ensureInitialCommit(options.projectPath);
 
+  const visibility = options.visibility === 'public' ? '--public' : '--private';
   const args = [
     'repo',
     'create',
     options.repoName,
-    '--public',
+    visibility,
     `--source=${options.projectPath}`,
     '--remote=origin',
     '--push',
@@ -102,8 +104,13 @@ export async function createRepo(options: {
 /**
  * Interactive flow: prompt to create a GitHub repo under the current user, then create it and set origin.
  * Returns true if a repo was created (or already had origin), false if skipped or failed.
+ * @param visibility - 'public' or 'private' (default: 'private')
  */
-export async function offerAndCreateGitHubRepo(projectPath: string): Promise<boolean> {
+export async function offerAndCreateGitHubRepo(
+  projectPath: string,
+  options?: { visibility?: 'public' | 'private' }
+): Promise<boolean> {
+  const visibility = options?.visibility ?? 'private';
   const pkgJsonPath = path.join(projectPath, 'package.json');
   if (!(await fs.pathExists(pkgJsonPath))) {
     console.log('\nℹ️  No package.json found; skipping GitHub repository creation.\n');
@@ -153,7 +160,7 @@ export async function offerAndCreateGitHubRepo(projectPath: string): Promise<boo
 
   const repoUrl = `https://github.com/${auth.username}/${repoName}`;
   console.log('\n📋 The following will happen:\n');
-  console.log(`   • A new public repository will be created at: ${repoUrl}`);
+  console.log(`   • A new ${visibility} repository will be created at: ${repoUrl}`);
   console.log(`   • The repository will be created under your GitHub account (${auth.username}).`);
   console.log(`   • The repository URL will be added to your package.json.`);
   console.log(`   • The remote "origin" will be set to this repository (you can push when ready).\n`);
@@ -177,6 +184,7 @@ export async function offerAndCreateGitHubRepo(projectPath: string): Promise<boo
       repoName,
       projectPath,
       username: auth.username,
+      visibility,
       ...(pkgJson.description && { description: String(pkgJson.description) }),
     });
     pkgJson.repository = { type: 'git', url: createdUrl };

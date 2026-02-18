@@ -20,6 +20,7 @@ program
   .argument('[template-name]', 'The name of the template to use')
   .option('-t, --template-file <path>', 'Path to a JSON file with custom templates (same format as built-in)')
   .option('--ssh', 'Use SSH URL for cloning the template repository')
+  .option('--repo <visibility>', 'GitHub repo visibility when creating a repo: public or private (default: private)', 'private')
   .action(async (projectDirectory, templateName, options) => {
     try {
       await runCreate(projectDirectory, templateName, options);

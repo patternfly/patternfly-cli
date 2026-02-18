@@ -17,6 +17,7 @@ type ProjectData = {
 export type CreateOptions = {
   templateFile?: string;
   ssh?: boolean;
+  repo?: string;
 };
 
 /**
@@ -145,7 +146,8 @@ export async function runCreate(
     await execa(packageManager, ['install'], { cwd: projectPath, stdio: 'inherit' });
     console.log('✅ Dependencies installed.');
 
-    await offerAndCreateGitHubRepo(projectPath);
+    const visibility = options?.repo === 'public' ? 'public' : 'private';
+    await offerAndCreateGitHubRepo(projectPath, { visibility });
 
     console.log('\n✨ Project created successfully! ✨\n');
     console.log(`To get started:`);

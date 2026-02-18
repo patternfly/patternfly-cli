@@ -181,7 +181,7 @@ describe('createRepo', () => {
         'repo',
         'create',
         'my-app',
-        '--public',
+        '--private',
         `--source=${projectPath}`,
         '--remote=origin',
         '--push',
