@@ -5,8 +5,11 @@ import { execa } from 'execa';
 import inquirer from 'inquirer';
 import fs from 'fs-extra';
 import path from 'path';
-import { defaultTemplates }from './templates.js';
+import { defaultTemplates } from './templates.js';
 import { mergeTemplates } from './template-loader.js';
+import { offerAndCreateGitHubRepo } from './github.js';
+import { runSave } from './save.js';
+import { runLoad } from './load.js';
 
 /** Project data provided by the user */
 type ProjectData = {
@@ -25,11 +28,25 @@ program
   .version('1.0.0')
   .command('create')
   .description('Create a new project from a git template')
-  .argument('<project-directory>', 'The directory to create the project in')
+  .argument('[project-directory]', 'The directory to create the project in')
   .argument('[template-name]', 'The name of the template to use')
   .option('-t, --template-file <path>', 'Path to a JSON file with custom templates (same format as built-in)')
+  .option('--ssh', 'Use SSH URL for cloning the template repository')
   .action(async (projectDirectory, templateName, options) => {
     const templatesToUse = mergeTemplates(defaultTemplates, options?.templateFile);
+
+    // If project directory is not provided, prompt for it
+    if (!projectDirectory) {
+      const projectDirAnswer = await inquirer.prompt([
+        {
+          type: 'input',
+          name: 'projectDirectory',
+          message: 'Please provide the directory where you want to create the project?',
+          default: 'my-app',
+        },
+      ]);
+      projectDirectory = projectDirAnswer.projectDirectory;
+    }
 
     // If template name is not provided, show available templates and let user select
     if (!templateName) {
@@ -66,8 +83,22 @@ program
       console.log('');
       process.exit(1);
     }
-    
-    const templateRepoUrl = template.repo;
+
+    // If --ssh was not passed, prompt whether to use SSH
+    let useSSH = options?.ssh;
+    if (useSSH === undefined && template.repoSSH) {
+      const sshAnswer = await inquirer.prompt([
+        {
+          type: 'confirm',
+          name: 'useSSH',
+          message: 'Use SSH URL for cloning?',
+          default: false,
+        },
+      ]);
+      useSSH = sshAnswer.useSSH;
+    }
+
+    const templateRepoUrl = useSSH && template.repoSSH ? template.repoSSH : template.repo;
     
     // Define the full path for the new project
     const projectPath = path.resolve(projectDirectory);
@@ -93,25 +124,25 @@ program
         {
           type: 'input',
           name: 'name',
-          message: 'Project name?',
+          message: 'What is the project name?',
           default: path.basename(projectPath),
         },
         {
           type: 'input',
           name: 'version',
-          message: 'Version?',
+          message: 'What version number would you like to use?',
           default: '1.0.0',
         },
         {
           type: 'input',
           name: 'description',
-          message: 'Description?',
+          message: 'What is the project description?',
           default: '',
         },
         {
           type: 'input',
           name: 'author',
-          message: 'Author?',
+          message: 'Who is the author of the project?',
           default: '',
         },
       ];
@@ -143,6 +174,9 @@ program
       await execa(packageManager, ['install'], { cwd: projectPath, stdio: 'inherit' });
       console.log('✅ Dependencies installed.');
 
+      // Optional: Create GitHub repository
+      await offerAndCreateGitHubRepo(projectPath);
+
       // Let the user know the project was created successfully
       console.log('\n✨ Project created successfully! ✨\n');
       console.log(`To get started:`);
@@ -165,6 +199,21 @@ program
         console.log('🧹 Cleaned up failed project directory.');
       }
     }
+  });
+
+/** Command to initialize a project and optionally create a GitHub repository */
+program
+  .command('init')
+  .description('Initialize the current directory (or path) as a git repo and optionally create a GitHub repository')
+  .argument('[path]', 'Path to the project directory (defaults to current directory)')
+  .action(async (dirPath) => {
+    const cwd = dirPath ? path.resolve(dirPath) : process.cwd();
+    const gitDir = path.join(cwd, '.git');
+    if (!(await fs.pathExists(gitDir))) {
+      await execa('git', ['init'], { stdio: 'inherit', cwd });
+      console.log('✅ Git repository initialized.\n');
+    }
+    await offerAndCreateGitHubRepo(cwd);
   });
 
 /** Command to list all available templates */
@@ -225,6 +274,34 @@ program
     }
     
     console.log('\n✨ All updates completed successfully! ✨');
+  });
+
+/** Command to save changes: check for changes, prompt to commit, and push */
+program
+  .command('save')
+  .description('Check for changes, optionally commit them with a message, and push to the current branch')
+  .argument('[path]', 'Path to the repository (defaults to current directory)')
+  .action(async (repoPath) => {
+    const cwd = repoPath ? path.resolve(repoPath) : process.cwd();
+    try {
+      await runSave(cwd);
+    } catch {
+      process.exit(1);
+    }
+  });
+
+/** Command to load latest updates from the remote */
+program
+  .command('load')
+  .description('Pull the latest updates from GitHub')
+  .argument('[path]', 'Path to the repository (defaults to current directory)')
+  .action(async (repoPath) => {
+    const cwd = repoPath ? path.resolve(repoPath) : process.cwd();
+    try {
+      await runLoad(cwd);
+    } catch {
+      process.exit(1);
+    }
   });
 
 program.parse(process.argv);

@@ -2,7 +2,7 @@ import fs from 'fs-extra';
 import path from 'path';
 import type { Template } from './templates.js';
 
-/** Functoin used to load custom templates from a JSON file */
+/** Function used to load custom templates from a JSON file */
 export function loadCustomTemplates(filePath: string): Template[] {
   const resolved = path.resolve(filePath);
   if (!fs.existsSync(resolved)) {
@@ -44,8 +44,13 @@ export function loadCustomTemplates(filePath: string): Template[] {
       console.error(`❌ Template at index ${i}: "repo" must be a non-empty string.\n`);
       process.exit(1);
     }
+    const repoSSH = obj['repoSSH'];
     const options = obj['options'];
     const packageManager = obj['packageManager'];
+    if (typeof repoSSH !== 'undefined' && (typeof repoSSH !== 'string' || !repoSSH.trim())) {
+      console.error(`❌ Template at index ${i}: "repoSSH" must be a non-empty string.\n`);
+      process.exit(1);
+    }
     if (options !== undefined && (!Array.isArray(options) || options.some((o) => typeof o !== 'string'))) {
       console.error(`❌ Template at index ${i}: "options" must be an array of strings.\n`);
       process.exit(1);
@@ -58,6 +63,7 @@ export function loadCustomTemplates(filePath: string): Template[] {
       name: name.trim(),
       description: String(description),
       repo: repo.trim(),
+      ...(typeof repoSSH === 'string' && repoSSH.trim() && { repoSSH: repoSSH.trim() }),
       ...(Array.isArray(options) && options.length > 0 && { options: options as string[] }),
       ...(typeof packageManager === 'string' && packageManager.length > 0 && { packageManager }),
     });

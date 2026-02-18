@@ -5,6 +5,8 @@ export type Template = {
   description: string;
   /** Template repository URL */
   repo: string;
+  /** Template repository SSH URL (optional, falls back to repo if not provided) */
+  repoSSH?: string;
   /** Template checkout options */
   options?: string[];
   /** Template package manager */
@@ -16,25 +18,29 @@ export const defaultTemplates: Template[] = [
         name: "starter",
         description: "A starter template for Patternfly react typescript project",
         repo: "https://github.com/patternfly/patternfly-react-seed.git",
+        repoSSH: "git@github.com:patternfly/patternfly-react-seed.git",
         packageManager: "yarn"
     },
     {
         name: "compass-starter",
         description: "A starter template for Patternfly compass theme typescript project",
         repo: "https://github.com/patternfly/patternfly-react-seed.git",
+        repoSSH: "git@github.com:patternfly/patternfly-react-seed.git",
         options: ["--single-branch", "--branch", "compass_theme"],
         packageManager: "yarn"
     },
     {
         name: "nextjs-starter",
         description: "A starter template for Patternfly nextjs project",
-        repo: "git@github.com:patternfly/patternfly-nextjs-seed.git",
+        repo: "https://github.com/patternfly/patternfly-nextjs-seed.git",
+        repoSSH: "git@github.com:patternfly/patternfly-nextjs-seed.git",
         packageManager: "yarn"
     },
     {
         name: "rhoai_enabled_starter",
         description: "A starter template for Red Hat Open AI enabled project",
         repo: "https://gitlab.cee.redhat.com/uxd/prototypes/rhoai",
+        repoSSH: "git@gitlab.cee.redhat.com:uxd/prototypes/rhoai.git",
         options: ["--single-branch", "--branch", "3.2"]
     }
 ]
