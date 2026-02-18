@@ -3,6 +3,7 @@ import fs from 'fs-extra';
 import { execa } from 'execa';
 import inquirer from 'inquirer';
 import { offerAndCreateGitHubRepo } from './github.js';
+import { handleGitError } from './util.js';
 
 /**
  * Runs the save flow: verify repo, check for changes, prompt to commit, then add/commit/push.
@@ -55,7 +56,7 @@ export async function runSave(cwd: string): Promise<void> {
 
   const commitMessage = (message as string).trim();
   if (!commitMessage) {
-    console.log('\n📭 No message provided; nothing has been saved.\n');
+    console.log('\nNo message provided.\n');
     return;
   }
 
@@ -84,20 +85,6 @@ export async function runSave(cwd: string): Promise<void> {
     await execa('git', ['push'], { cwd, stdio: 'inherit' });
     console.log('\n✅ Changes saved and pushed to GitHub successfully.\n');
   } catch (err) {
-    if (err && typeof err === 'object' && 'exitCode' in err) {
-      const code = (err as { exitCode?: number }).exitCode;
-      if (code === 128) {
-        console.error(
-          '\n❌ Push failed. You may need to set a remote (e.g. "git remote add origin <url>") or run "gh auth login".\n',
-        );
-      } else {
-        console.error('\n❌ Save or push failed. See the output above for details.\n');
-      }
-    } else if (!(err instanceof Error && err.message === 'No remote origin')) {
-      console.error('\n❌ An error occurred:');
-      if (err instanceof Error) console.error(`   ${err.message}\n`);
-      else console.error(`   ${String(err)}\n`);
-    }
-    throw err;
+    handleGitError(err, 'Push', 'You may need to set a remote (e.g. "git remote add origin <url>") or run "gh auth login".');
   }
 }

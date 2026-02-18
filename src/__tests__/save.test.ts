@@ -199,7 +199,7 @@ describe('runSave', () => {
     await expect(runSave(cwd)).rejects.toMatchObject({ message: 'add failed' });
 
     expect(consoleErrorSpy).toHaveBeenCalledWith(
-      expect.stringContaining('Save or push failed'),
+      expect.stringContaining('Push failed'),
     );
   });
 
