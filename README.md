@@ -99,4 +99,12 @@ After building the cli you can install the cli globally by running the following
 npm install -g
 ```
 
-After that you can now execute the cli via ```patternfly-cli``` command in the terminal. We are currently in the process of moving this to npmjs once we this ready for v 1.0.0
+After that you can now execute the cli via ```patternfly-cli``` command in the terminal.
+
+### Releasing
+
+This project uses [semantic-release](https://semantic-release.gitbook.io/) to automate versioning and releases based on [Conventional Commits](https://www.conventionalcommits.org/).
+
+- **CI**: Pushing to `main` runs the release workflow. If there are commits that warrant a release (e.g. `feat:`, `fix:`, `BREAKING CHANGE:`), it will create a GitHub release, update `CHANGELOG.md`, and bump the version in `package.json`.
+- **Local dry run**: `npx semantic-release --dry-run` (no push or publish).
+- **npm publish**: By default only GitHub releases are created. To publish to npm, set the `NPM_TOKEN` secret in the repo and set `"npmPublish": true` for the `@semantic-release/npm` plugin in `.releaserc.json`.

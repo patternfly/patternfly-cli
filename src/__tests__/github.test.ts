@@ -14,8 +14,7 @@ import {
   repoExists,
   createRepo,
 } from '../github.js';
-
-const { execa: mockExeca } = require('execa');
+import { execa as mockExeca } from 'execa';
 
 describe('sanitizeRepoName', () => {
   it('returns lowercase name with invalid chars replaced by hyphen', () => {
