@@ -66,9 +66,9 @@ export async function runDeployToGitHubPages(
     );
   }
 
-  if (!(await fs.pathExists(gitDir))) {
+  if (!(await execa('git', ['remote', 'get-url', 'origin'], { cwd, reject: true }))) {
     throw new Error(
-      'This directory is not a git repository. Initialize with "git init" or use "patternfly-cli init", and ensure the repo has a remote (e.g. GitHub) before deploying.'
+      'Please save your changes first, before deploying to GitHub Pages.'
     );
   }
 
@@ -76,7 +76,7 @@ export async function runDeployToGitHubPages(
     await runBuild(cwd);
   }
 
-  const absoluteDist = path.join(cwd, distDir);
+  const absoluteDist = path.resolve(cwd, distDir);
   if (!(await fs.pathExists(absoluteDist))) {
     throw new Error(
       `Build output directory "${distDir}" does not exist. Run a build first or specify the correct directory with -d/--dist-dir.`
@@ -84,7 +84,7 @@ export async function runDeployToGitHubPages(
   }
 
   console.log(`🚀 Deploying "${distDir}" to GitHub Pages (branch: ${branch})...`);
-  await execa('npx', ['gh-pages', '-d', distDir, '-b', branch], {
+  await execa('gh-pages', ['-d', distDir, '-b', branch], {
     cwd,
     stdio: 'inherit',
   });
