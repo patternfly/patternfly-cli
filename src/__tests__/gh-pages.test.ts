@@ -22,6 +22,16 @@ const mockExeca = execa as jest.MockedFunction<typeof execa>;
 
 const cwd = '/tmp/my-app';
 
+/** Setup pathExists to return values based on path (avoids brittle call-order chains) */
+function setupPathExists(checks: Record<string, boolean>) {
+  mockPathExists.mockImplementation((p: string) => {
+    for (const [key, value] of Object.entries(checks)) {
+      if (p.includes(key) || p === path.join(cwd, key)) return Promise.resolve(value);
+    }
+    return Promise.resolve(checks['*'] ?? false);
+  });
+}
+
 describe('runDeployToGitHubPages', () => {
   const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
 
@@ -45,38 +55,33 @@ describe('runDeployToGitHubPages', () => {
     expect(mockExeca).not.toHaveBeenCalled();
   });
 
-  it('throws when .git directory does not exist', async () => {
-    mockPathExists
-      .mockResolvedValueOnce(true) // package.json
-      .mockResolvedValueOnce(false); // .git
+  it('throws when git remote origin is not configured', async () => {
+    setupPathExists({ 'package.json': true });
+    mockExeca.mockResolvedValue(undefined as unknown as Awaited<ReturnType<typeof execa>>);
 
     await expect(runDeployToGitHubPages(cwd)).rejects.toThrow(
-      'This directory is not a git repository'
+      'Please save your changes first, before deploying to GitHub Pages.'
     );
-    expect(mockPathExists).toHaveBeenCalledWith(path.join(cwd, '.git'));
-    expect(mockExeca).not.toHaveBeenCalled();
+    expect(mockExeca).toHaveBeenCalledWith('git', ['remote', 'get-url', 'origin'], {
+      cwd,
+      reject: true,
+    });
   });
 
   it('throws when no build script and skipBuild is false', async () => {
-    mockPathExists
-      .mockResolvedValueOnce(true) // package.json
-      .mockResolvedValueOnce(true); // .git
+    setupPathExists({ 'package.json': true });
     mockReadJson.mockResolvedValueOnce({ scripts: {} });
+    mockExeca.mockResolvedValue({ stdout: '', stderr: '', exitCode: 0 } as Awaited<ReturnType<typeof execa>>);
 
     await expect(runDeployToGitHubPages(cwd, { skipBuild: false })).rejects.toThrow(
       'No "build" script found in package.json'
     );
     expect(mockReadJson).toHaveBeenCalledWith(path.join(cwd, 'package.json'));
-    expect(mockExeca).not.toHaveBeenCalled();
+    expect(mockExeca).toHaveBeenCalledTimes(1); // only git
   });
 
   it('runs build then deploys when skipBuild is false (npm)', async () => {
-    mockPathExists
-      .mockResolvedValueOnce(true) // package.json
-      .mockResolvedValueOnce(true) // .git
-      .mockResolvedValueOnce(false) // yarn.lock
-      .mockResolvedValueOnce(false) // pnpm-lock.yaml
-      .mockResolvedValueOnce(true); // dist
+    setupPathExists({ 'package.json': true, 'dist': true });
     mockReadJson.mockResolvedValueOnce({
       scripts: { build: 'webpack --config webpack.prod.js' },
     });
@@ -84,12 +89,12 @@ describe('runDeployToGitHubPages', () => {
 
     await runDeployToGitHubPages(cwd, { skipBuild: false });
 
-    expect(mockExeca).toHaveBeenCalledTimes(2);
-    expect(mockExeca).toHaveBeenNthCalledWith(1, 'npm', ['run', 'build'], {
+    expect(mockExeca).toHaveBeenCalledTimes(3); // git, npm run build, gh-pages
+    expect(mockExeca).toHaveBeenNthCalledWith(2, 'npm', ['run', 'build'], {
       cwd,
       stdio: 'inherit',
     });
-    expect(mockExeca).toHaveBeenNthCalledWith(2, 'npx', ['gh-pages', '-d', 'dist', '-b', 'gh-pages'], {
+    expect(mockExeca).toHaveBeenNthCalledWith(3, 'gh-pages', ['-d', 'dist', '-b', 'gh-pages'], {
       cwd,
       stdio: 'inherit',
     });
@@ -102,11 +107,7 @@ describe('runDeployToGitHubPages', () => {
   });
 
   it('uses yarn when yarn.lock exists', async () => {
-    mockPathExists
-      .mockResolvedValueOnce(true) // package.json
-      .mockResolvedValueOnce(true) // .git
-      .mockResolvedValueOnce(true) // yarn.lock
-      .mockResolvedValueOnce(true); // dist
+    setupPathExists({ 'package.json': true, 'yarn.lock': true, 'dist': true });
     mockReadJson.mockResolvedValueOnce({
       scripts: { build: 'webpack' },
     });
@@ -114,19 +115,14 @@ describe('runDeployToGitHubPages', () => {
 
     await runDeployToGitHubPages(cwd, { skipBuild: false });
 
-    expect(mockExeca).toHaveBeenNthCalledWith(1, 'yarn', ['build'], {
+    expect(mockExeca).toHaveBeenNthCalledWith(2, 'yarn', ['build'], {
       cwd,
       stdio: 'inherit',
     });
   });
 
   it('uses pnpm when pnpm-lock.yaml exists (and no yarn.lock)', async () => {
-    mockPathExists
-      .mockResolvedValueOnce(true) // package.json
-      .mockResolvedValueOnce(true) // .git
-      .mockResolvedValueOnce(false) // yarn.lock
-      .mockResolvedValueOnce(true) // pnpm-lock.yaml
-      .mockResolvedValueOnce(true); // dist
+    setupPathExists({ 'package.json': true, 'pnpm-lock.yaml': true, 'dist': true });
     mockReadJson.mockResolvedValueOnce({
       scripts: { build: 'vite build' },
     });
@@ -134,36 +130,28 @@ describe('runDeployToGitHubPages', () => {
 
     await runDeployToGitHubPages(cwd, { skipBuild: false });
 
-    expect(mockExeca).toHaveBeenNthCalledWith(1, 'pnpm', ['build'], {
+    expect(mockExeca).toHaveBeenNthCalledWith(2, 'pnpm', ['build'], {
       cwd,
       stdio: 'inherit',
     });
   });
 
   it('skips build and deploys when skipBuild is true', async () => {
-    mockPathExists
-      .mockResolvedValueOnce(true) // package.json
-      .mockResolvedValueOnce(true) // .git
-      .mockResolvedValueOnce(true); // dist
+    setupPathExists({ 'package.json': true, 'dist': true });
     mockExeca.mockResolvedValue({ stdout: '', stderr: '', exitCode: 0 } as Awaited<ReturnType<typeof execa>>);
 
     await runDeployToGitHubPages(cwd, { skipBuild: true });
 
     expect(mockReadJson).not.toHaveBeenCalled();
-    expect(mockExeca).toHaveBeenCalledTimes(1);
-    expect(mockExeca).toHaveBeenCalledWith('npx', ['gh-pages', '-d', 'dist', '-b', 'gh-pages'], {
+    expect(mockExeca).toHaveBeenCalledTimes(2); // git, gh-pages
+    expect(mockExeca).toHaveBeenNthCalledWith(2, 'gh-pages', ['-d', 'dist', '-b', 'gh-pages'], {
       cwd,
       stdio: 'inherit',
     });
   });
 
   it('throws when dist directory does not exist (after build)', async () => {
-    mockPathExists
-      .mockResolvedValueOnce(true) // package.json
-      .mockResolvedValueOnce(true) // .git
-      .mockResolvedValueOnce(false) // yarn.lock
-      .mockResolvedValueOnce(false) // pnpm-lock.yaml
-      .mockResolvedValueOnce(false); // dist (missing)
+    setupPathExists({ 'package.json': true, 'dist': false });
     mockReadJson.mockResolvedValueOnce({
       scripts: { build: 'npm run build' },
     });
@@ -172,26 +160,21 @@ describe('runDeployToGitHubPages', () => {
     await expect(runDeployToGitHubPages(cwd, { skipBuild: false })).rejects.toThrow(
       'Build output directory "dist" does not exist'
     );
-    expect(mockExeca).toHaveBeenCalledTimes(1); // only build
+    expect(mockExeca).toHaveBeenCalledTimes(2); // git, npm run build
   });
 
   it('throws when dist directory does not exist with skipBuild true', async () => {
-    mockPathExists
-      .mockResolvedValueOnce(true) // package.json
-      .mockResolvedValueOnce(true) // .git
-      .mockResolvedValueOnce(false); // dist
+    setupPathExists({ 'package.json': true, 'dist': false });
+    mockExeca.mockResolvedValue({ stdout: '', stderr: '', exitCode: 0 } as Awaited<ReturnType<typeof execa>>);
 
     await expect(runDeployToGitHubPages(cwd, { skipBuild: true })).rejects.toThrow(
       'Build output directory "dist" does not exist'
     );
-    expect(mockExeca).not.toHaveBeenCalled();
+    expect(mockExeca).toHaveBeenCalledTimes(1); // git only
   });
 
   it('uses custom distDir and branch options', async () => {
-    mockPathExists
-      .mockResolvedValueOnce(true) // package.json
-      .mockResolvedValueOnce(true) // .git
-      .mockResolvedValueOnce(true); // build dir
+    setupPathExists({ 'package.json': true, 'build': true });
     mockExeca.mockResolvedValue({ stdout: '', stderr: '', exitCode: 0 } as Awaited<ReturnType<typeof execa>>);
 
     await runDeployToGitHubPages(cwd, {
@@ -200,7 +183,7 @@ describe('runDeployToGitHubPages', () => {
       branch: 'pages',
     });
 
-    expect(mockExeca).toHaveBeenCalledWith('npx', ['gh-pages', '-d', 'build', '-b', 'pages'], {
+    expect(mockExeca).toHaveBeenNthCalledWith(2, 'gh-pages', ['-d', 'build', '-b', 'pages'], {
       cwd,
       stdio: 'inherit',
     });
@@ -210,32 +193,29 @@ describe('runDeployToGitHubPages', () => {
   });
 
   it('propagates build failure', async () => {
-    mockPathExists
-      .mockResolvedValueOnce(true) // package.json
-      .mockResolvedValueOnce(true) // .git
-      .mockResolvedValueOnce(false) // yarn.lock
-      .mockResolvedValueOnce(false); // pnpm-lock.yaml
+    setupPathExists({ 'package.json': true });
     mockReadJson.mockResolvedValueOnce({
       scripts: { build: 'webpack' },
     });
-    mockExeca.mockRejectedValueOnce(new Error('Build failed'));
+    mockExeca
+      .mockResolvedValueOnce({ stdout: '', stderr: '', exitCode: 0 } as Awaited<ReturnType<typeof execa>>)
+      .mockRejectedValueOnce(new Error('Build failed'));
 
     await expect(runDeployToGitHubPages(cwd, { skipBuild: false })).rejects.toThrow(
       'Build failed'
     );
-    expect(mockExeca).toHaveBeenCalledTimes(1);
+    expect(mockExeca).toHaveBeenCalledTimes(2); // git, npm run build
   });
 
   it('propagates gh-pages deploy failure', async () => {
-    mockPathExists
-      .mockResolvedValueOnce(true) // package.json
-      .mockResolvedValueOnce(true) // .git
-      .mockResolvedValueOnce(true); // dist
-    mockExeca.mockRejectedValueOnce(new Error('Deploy failed'));
+    setupPathExists({ 'package.json': true, 'dist': true });
+    mockExeca
+      .mockResolvedValueOnce({ stdout: '', stderr: '', exitCode: 0 } as Awaited<ReturnType<typeof execa>>)
+      .mockRejectedValueOnce(new Error('Deploy failed'));
 
     await expect(runDeployToGitHubPages(cwd, { skipBuild: true })).rejects.toThrow(
       'Deploy failed'
     );
-    expect(mockExeca).toHaveBeenCalledTimes(1);
+    expect(mockExeca).toHaveBeenCalledTimes(2); // git, gh-pages
   });
 });
