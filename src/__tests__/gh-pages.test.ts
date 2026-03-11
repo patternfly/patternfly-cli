@@ -11,14 +11,27 @@ jest.mock('execa', () => ({
   execa: jest.fn(),
 }));
 
+jest.mock('gh-pages', () => ({
+  __esModule: true,
+  default: {
+    publish: jest.fn(),
+  },
+}));
+
+jest.mock('../github.js', () => ({
+  checkGhAuth: jest.fn().mockResolvedValue({ ok: false }),
+}));
+
 import path from 'path';
 import fs from 'fs-extra';
 import { execa } from 'execa';
+import ghPages from 'gh-pages';
 import { runDeployToGitHubPages } from '../gh-pages.js';
 
 const mockPathExists = fs.pathExists as jest.MockedFunction<typeof fs.pathExists>;
 const mockReadJson = fs.readJson as jest.MockedFunction<typeof fs.readJson>;
 const mockExeca = execa as jest.MockedFunction<typeof execa>;
+const mockGhPagesPublish = ghPages.publish as jest.MockedFunction<typeof ghPages.publish>;
 
 const cwd = '/tmp/my-app';
 
@@ -57,7 +70,7 @@ describe('runDeployToGitHubPages', () => {
 
   it('throws when git remote origin is not configured', async () => {
     setupPathExists({ 'package.json': true });
-    mockExeca.mockResolvedValue(undefined as unknown as Awaited<ReturnType<typeof execa>>);
+    mockExeca.mockRejectedValue(new Error('not a git repo'));
 
     await expect(runDeployToGitHubPages(cwd)).rejects.toThrow(
       'Please save your changes first, before deploying to GitHub Pages.'
@@ -71,7 +84,11 @@ describe('runDeployToGitHubPages', () => {
   it('throws when no build script and skipBuild is false', async () => {
     setupPathExists({ 'package.json': true });
     mockReadJson.mockResolvedValueOnce({ scripts: {} });
-    mockExeca.mockResolvedValue({ stdout: '', stderr: '', exitCode: 0 } as Awaited<ReturnType<typeof execa>>);
+    mockExeca.mockResolvedValue({
+      stdout: 'https://github.com/user/repo.git',
+      stderr: '',
+      exitCode: 0,
+    } as Awaited<ReturnType<typeof execa>>);
 
     await expect(runDeployToGitHubPages(cwd, { skipBuild: false })).rejects.toThrow(
       'No "build" script found in package.json'
@@ -85,19 +102,25 @@ describe('runDeployToGitHubPages', () => {
     mockReadJson.mockResolvedValueOnce({
       scripts: { build: 'webpack --config webpack.prod.js' },
     });
-    mockExeca.mockResolvedValue({ stdout: '', stderr: '', exitCode: 0 } as Awaited<ReturnType<typeof execa>>);
+    mockExeca.mockResolvedValue({
+      stdout: 'https://github.com/user/repo.git',
+      stderr: '',
+      exitCode: 0,
+    } as Awaited<ReturnType<typeof execa>>);
+    mockGhPagesPublish.mockImplementation((_dir, _opts, cb) => cb(null));
 
     await runDeployToGitHubPages(cwd, { skipBuild: false });
 
-    expect(mockExeca).toHaveBeenCalledTimes(3); // git, npm run build, gh-pages
+    expect(mockExeca).toHaveBeenCalledTimes(2); // git, npm run build
     expect(mockExeca).toHaveBeenNthCalledWith(2, 'npm', ['run', 'build'], {
       cwd,
       stdio: 'inherit',
     });
-    expect(mockExeca).toHaveBeenNthCalledWith(3, 'gh-pages', ['-d', 'dist', '-b', 'gh-pages'], {
-      cwd,
-      stdio: 'inherit',
-    });
+    expect(mockGhPagesPublish).toHaveBeenCalledWith(
+      path.join(cwd, 'dist'),
+      { branch: 'gh-pages', repo: 'https://github.com/user/repo.git' },
+      expect.any(Function)
+    );
     expect(consoleLogSpy).toHaveBeenCalledWith(
       expect.stringContaining('Running build')
     );
@@ -111,7 +134,12 @@ describe('runDeployToGitHubPages', () => {
     mockReadJson.mockResolvedValueOnce({
       scripts: { build: 'webpack' },
     });
-    mockExeca.mockResolvedValue({ stdout: '', stderr: '', exitCode: 0 } as Awaited<ReturnType<typeof execa>>);
+    mockExeca.mockResolvedValue({
+      stdout: 'https://github.com/user/repo.git',
+      stderr: '',
+      exitCode: 0,
+    } as Awaited<ReturnType<typeof execa>>);
+    mockGhPagesPublish.mockImplementation((_dir, _opts, cb) => cb(null));
 
     await runDeployToGitHubPages(cwd, { skipBuild: false });
 
@@ -126,7 +154,12 @@ describe('runDeployToGitHubPages', () => {
     mockReadJson.mockResolvedValueOnce({
       scripts: { build: 'vite build' },
     });
-    mockExeca.mockResolvedValue({ stdout: '', stderr: '', exitCode: 0 } as Awaited<ReturnType<typeof execa>>);
+    mockExeca.mockResolvedValue({
+      stdout: 'https://github.com/user/repo.git',
+      stderr: '',
+      exitCode: 0,
+    } as Awaited<ReturnType<typeof execa>>);
+    mockGhPagesPublish.mockImplementation((_dir, _opts, cb) => cb(null));
 
     await runDeployToGitHubPages(cwd, { skipBuild: false });
 
@@ -138,16 +171,22 @@ describe('runDeployToGitHubPages', () => {
 
   it('skips build and deploys when skipBuild is true', async () => {
     setupPathExists({ 'package.json': true, 'dist': true });
-    mockExeca.mockResolvedValue({ stdout: '', stderr: '', exitCode: 0 } as Awaited<ReturnType<typeof execa>>);
+    mockExeca.mockResolvedValue({
+      stdout: 'https://github.com/user/repo.git',
+      stderr: '',
+      exitCode: 0,
+    } as Awaited<ReturnType<typeof execa>>);
+    mockGhPagesPublish.mockImplementation((_dir, _opts, cb) => cb(null));
 
     await runDeployToGitHubPages(cwd, { skipBuild: true });
 
     expect(mockReadJson).not.toHaveBeenCalled();
-    expect(mockExeca).toHaveBeenCalledTimes(2); // git, gh-pages
-    expect(mockExeca).toHaveBeenNthCalledWith(2, 'gh-pages', ['-d', 'dist', '-b', 'gh-pages'], {
-      cwd,
-      stdio: 'inherit',
-    });
+    expect(mockExeca).toHaveBeenCalledTimes(1); // git only
+    expect(mockGhPagesPublish).toHaveBeenCalledWith(
+      path.join(cwd, 'dist'),
+      { branch: 'gh-pages', repo: 'https://github.com/user/repo.git' },
+      expect.any(Function)
+    );
   });
 
   it('throws when dist directory does not exist (after build)', async () => {
@@ -155,7 +194,11 @@ describe('runDeployToGitHubPages', () => {
     mockReadJson.mockResolvedValueOnce({
       scripts: { build: 'npm run build' },
     });
-    mockExeca.mockResolvedValue({ stdout: '', stderr: '', exitCode: 0 } as Awaited<ReturnType<typeof execa>>);
+    mockExeca.mockResolvedValue({
+      stdout: 'https://github.com/user/repo.git',
+      stderr: '',
+      exitCode: 0,
+    } as Awaited<ReturnType<typeof execa>>);
 
     await expect(runDeployToGitHubPages(cwd, { skipBuild: false })).rejects.toThrow(
       'Build output directory "dist" does not exist'
@@ -165,7 +208,11 @@ describe('runDeployToGitHubPages', () => {
 
   it('throws when dist directory does not exist with skipBuild true', async () => {
     setupPathExists({ 'package.json': true, 'dist': false });
-    mockExeca.mockResolvedValue({ stdout: '', stderr: '', exitCode: 0 } as Awaited<ReturnType<typeof execa>>);
+    mockExeca.mockResolvedValue({
+      stdout: 'https://github.com/user/repo.git',
+      stderr: '',
+      exitCode: 0,
+    } as Awaited<ReturnType<typeof execa>>);
 
     await expect(runDeployToGitHubPages(cwd, { skipBuild: true })).rejects.toThrow(
       'Build output directory "dist" does not exist'
@@ -175,7 +222,12 @@ describe('runDeployToGitHubPages', () => {
 
   it('uses custom distDir and branch options', async () => {
     setupPathExists({ 'package.json': true, 'build': true });
-    mockExeca.mockResolvedValue({ stdout: '', stderr: '', exitCode: 0 } as Awaited<ReturnType<typeof execa>>);
+    mockExeca.mockResolvedValue({
+      stdout: 'https://github.com/user/repo.git',
+      stderr: '',
+      exitCode: 0,
+    } as Awaited<ReturnType<typeof execa>>);
+    mockGhPagesPublish.mockImplementation((_dir, _opts, cb) => cb(null));
 
     await runDeployToGitHubPages(cwd, {
       skipBuild: true,
@@ -183,10 +235,11 @@ describe('runDeployToGitHubPages', () => {
       branch: 'pages',
     });
 
-    expect(mockExeca).toHaveBeenNthCalledWith(2, 'gh-pages', ['-d', 'build', '-b', 'pages'], {
-      cwd,
-      stdio: 'inherit',
-    });
+    expect(mockGhPagesPublish).toHaveBeenCalledWith(
+      path.join(cwd, 'build'),
+      { branch: 'pages', repo: 'https://github.com/user/repo.git' },
+      expect.any(Function)
+    );
     expect(consoleLogSpy).toHaveBeenCalledWith(
       expect.stringContaining('Deploying "build" to GitHub Pages (branch: pages)')
     );
@@ -198,7 +251,11 @@ describe('runDeployToGitHubPages', () => {
       scripts: { build: 'webpack' },
     });
     mockExeca
-      .mockResolvedValueOnce({ stdout: '', stderr: '', exitCode: 0 } as Awaited<ReturnType<typeof execa>>)
+      .mockResolvedValueOnce({
+        stdout: 'https://github.com/user/repo.git',
+        stderr: '',
+        exitCode: 0,
+      } as Awaited<ReturnType<typeof execa>>)
       .mockRejectedValueOnce(new Error('Build failed'));
 
     await expect(runDeployToGitHubPages(cwd, { skipBuild: false })).rejects.toThrow(
@@ -209,13 +266,18 @@ describe('runDeployToGitHubPages', () => {
 
   it('propagates gh-pages deploy failure', async () => {
     setupPathExists({ 'package.json': true, 'dist': true });
-    mockExeca
-      .mockResolvedValueOnce({ stdout: '', stderr: '', exitCode: 0 } as Awaited<ReturnType<typeof execa>>)
-      .mockRejectedValueOnce(new Error('Deploy failed'));
+    mockExeca.mockResolvedValue({
+      stdout: 'https://github.com/user/repo.git',
+      stderr: '',
+      exitCode: 0,
+    } as Awaited<ReturnType<typeof execa>>);
+    mockGhPagesPublish.mockImplementation((_dir, _opts, cb) =>
+      cb(new Error('Deploy failed'))
+    );
 
     await expect(runDeployToGitHubPages(cwd, { skipBuild: true })).rejects.toThrow(
       'Deploy failed'
     );
-    expect(mockExeca).toHaveBeenCalledTimes(2); // git, gh-pages
+    expect(mockExeca).toHaveBeenCalledTimes(1); // git only
   });
 });

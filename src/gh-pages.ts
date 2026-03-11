@@ -1,6 +1,8 @@
 import path from 'path';
 import fs from 'fs-extra';
 import { execa } from 'execa';
+import ghPages from 'gh-pages';
+import { checkGhAuth } from './github.js';
 
 export type DeployOptions = {
   /** Build output directory to deploy (e.g. dist, build) */
@@ -13,6 +15,66 @@ export type DeployOptions = {
 
 const DEFAULT_DIST_DIR = 'dist';
 const DEFAULT_BRANCH = 'gh-pages';
+
+/**
+ * Parse owner and repo name from a Git remote URL.
+ * Supports https://github.com/owner/repo, https://github.com/owner/repo.git, git@github.com:owner/repo.git
+ */
+function parseRepoFromUrl(repoUrl: string): { owner: string; repo: string } | null {
+  const trimmed = repoUrl.trim().replace(/\.git$/, '');
+  // git@github.com:owner/repo or https://github.com/owner/repo
+  const sshMatch = trimmed.match(/git@github\.com:([^/]+)\/([^/]+)/);
+  if (sshMatch?.[1] && sshMatch[2]) {
+    return { owner: sshMatch[1], repo: sshMatch[2] };
+  }
+  const httpsMatch = trimmed.match(/github\.com[/:]([^/]+)\/([^/#?]+)/);
+  if (httpsMatch?.[1] && httpsMatch[2]) {
+    return { owner: httpsMatch[1], repo: httpsMatch[2] };
+  }
+  return null;
+}
+
+/**
+ * Ensure GitHub Pages is enabled for the repository, configured to use the given branch.
+ * Uses the GitHub API via `gh` CLI. No-op if gh is not authenticated or on failure.
+ */
+async function ensurePagesEnabled(owner: string, repo: string, branch: string): Promise<void> {
+  const auth = await checkGhAuth();
+  if (!auth.ok) return;
+
+  const body = JSON.stringify({ source: { branch, path: '/' } });
+  try {
+    const getResult = await execa('gh', ['api', `repos/${owner}/${repo}/pages`, '--jq', '.source.branch'], {
+      reject: false,
+      encoding: 'utf8',
+    });
+    if (getResult.exitCode === 0) {
+      const currentBranch = getResult.stdout?.trim();
+      if (currentBranch === branch) return;
+      await execa('gh', [
+        'api',
+        '-X',
+        'PUT',
+        `repos/${owner}/${repo}/pages`,
+        '--input',
+        '-',
+      ], { input: body });
+      console.log(`   GitHub Pages source updated to branch "${branch}".`);
+    } else {
+      await execa('gh', [
+        'api',
+        '-X',
+        'POST',
+        `repos/${owner}/${repo}/pages`,
+        '--input',
+        '-',
+      ], { input: body });
+      console.log(`   GitHub Pages enabled (source: branch "${branch}").`);
+    }
+  } catch {
+    // Best-effort: continue without enabling; user can enable manually
+  }
+}
 
 /**
  * Detect package manager from lock files.
@@ -45,7 +107,7 @@ async function runBuild(cwd: string): Promise<void> {
 }
 
 /**
- * Deploy the built app to GitHub Pages using gh-pages (npx).
+ * Deploy the built app to GitHub Pages using the gh-pages package.
  * Builds the project first unless skipBuild is true, then publishes distDir to the gh-pages branch.
  */
 export async function runDeployToGitHubPages(
@@ -58,7 +120,6 @@ export async function runDeployToGitHubPages(
 
   const cwd = path.resolve(projectPath);
   const pkgPath = path.join(cwd, 'package.json');
-  const gitDir = path.join(cwd, '.git');
 
   if (!(await fs.pathExists(pkgPath))) {
     throw new Error(
@@ -66,7 +127,14 @@ export async function runDeployToGitHubPages(
     );
   }
 
-  if (!(await execa('git', ['remote', 'get-url', 'origin'], { cwd, reject: true }))) {
+  let repoUrl: string;
+  try {
+    const { stdout } = await execa('git', ['remote', 'get-url', 'origin'], {
+      cwd,
+      reject: true,
+    });
+    repoUrl = stdout.trim();
+  } catch {
     throw new Error(
       'Please save your changes first, before deploying to GitHub Pages.'
     );
@@ -76,17 +144,25 @@ export async function runDeployToGitHubPages(
     await runBuild(cwd);
   }
 
-  const absoluteDist = path.resolve(cwd, distDir);
+  const absoluteDist = path.join(cwd, distDir);
   if (!(await fs.pathExists(absoluteDist))) {
     throw new Error(
       `Build output directory "${distDir}" does not exist. Run a build first or specify the correct directory with -d/--dist-dir.`
     );
   }
 
+  const parsed = parseRepoFromUrl(repoUrl);
+  if (parsed) {
+    await ensurePagesEnabled(parsed.owner, parsed.repo, branch);
+  }
+
   console.log(`🚀 Deploying "${distDir}" to GitHub Pages (branch: ${branch})...`);
-  await execa('gh-pages', ['-d', distDir, '-b', branch], {
-    cwd,
-    stdio: 'inherit',
+  await new Promise<void>((resolve, reject) => {
+    ghPages.publish(
+      absoluteDist,
+      { branch, repo: repoUrl },
+      (err) => (err ? reject(err) : resolve())
+    );
   });
   console.log('\n✅ Deployed to GitHub Pages.');
   console.log('   Enable GitHub Pages in your repo: Settings → Pages → Source: branch "' + branch + '".');
