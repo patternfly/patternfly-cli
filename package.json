@@ -4,6 +4,9 @@
   "description": "Patternfly cli for scaffolding projects, performing code mods, and running project related tasks",
   "author": "Red Hat",
   "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
   "main": "dist/cli.js",
   "type": "module",
   "bin": {
