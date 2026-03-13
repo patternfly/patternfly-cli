@@ -10,6 +10,7 @@ import { mergeTemplates } from './template-loader.js';
 import { offerAndCreateGitHubRepo } from './github.js';
 import { runSave } from './save.js';
 import { runLoad } from './load.js';
+import { runDeployToGitHubPages } from './gh-pages.js';
 
 /** Project data provided by the user */
 type ProjectData = {
@@ -300,6 +301,32 @@ program
     try {
       await runLoad(cwd);
     } catch {
+      process.exit(1);
+    }
+  });
+
+/** Command to deploy the React app to GitHub Pages */
+program
+  .command('deploy')
+  .description('Build the app and deploy it to GitHub Pages (uses gh-pages branch)')
+  .argument('[path]', 'Path to the project (defaults to current directory)')
+  .option('-d, --dist-dir <dir>', 'Build output directory to deploy', 'dist')
+  .option('--no-build', 'Skip running the build step (deploy existing output only)')
+  .option('-b, --branch <branch>', 'Git branch to deploy to', 'gh-pages')
+  .action(async (projectPath, options) => {
+    const cwd = projectPath ? path.resolve(projectPath) : process.cwd();
+    try {
+      await runDeployToGitHubPages(cwd, {
+        distDir: options.distDir,
+        skipBuild: options.build === false,
+        branch: options.branch,
+      });
+    } catch (error) {
+      if (error instanceof Error) {
+        console.error(`\n❌ ${error.message}\n`);
+      } else {
+        console.error(error);
+      }
       process.exit(1);
     }
   });
