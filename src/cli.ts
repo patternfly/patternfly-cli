@@ -143,6 +143,10 @@ program
   .option('-d, --dist-dir <dir>', 'Build output directory to deploy', 'dist')
   .option('--no-build', 'Skip running the build step (deploy existing output only)')
   .option('-b, --branch <branch>', 'Git branch to deploy to', 'gh-pages')
+  .option(
+    '--base <path>',
+    'Public URL path for assets (default: /<repo>/ from git origin, or / for <user>.github.io repos)'
+  )
   .action(async (projectPath, options) => {
     const cwd = projectPath ? path.resolve(projectPath) : process.cwd();
     try {
@@ -150,6 +154,7 @@ program
         distDir: options.distDir,
         skipBuild: options.build === false,
         branch: options.branch,
+        basePath: options.base,
       });
     } catch (error) {
       if (error instanceof Error) {

@@ -11,6 +11,11 @@ export type DeployOptions = {
   skipBuild: boolean;
   /** Branch to push to (default gh-pages) */
   branch: string;
+  /**
+   * Public path prefix for the site (e.g. "/" or "/my-repo/").
+   * When omitted, derived from origin: project pages use "/<repo>/", user pages use "/".
+   */
+  basePath?: string;
 };
 
 const DEFAULT_DIST_DIR = 'dist';
@@ -32,6 +37,88 @@ function parseRepoFromUrl(repoUrl: string): { owner: string; repo: string } | nu
     return { owner: httpsMatch[1], repo: httpsMatch[2] };
   }
   return null;
+}
+
+/**
+ * Path prefix for static assets on GitHub Pages.
+ * User/org sites use repo "<owner>.github.io" and are served from "/".
+ * Project sites are served from "/<repo>/".
+ */
+export function getGitHubPagesPublicPath(owner: string, repo: string): string {
+  const repoLower = repo.toLowerCase();
+  const ownerLower = owner.toLowerCase();
+  if (repoLower === `${ownerLower}.github.io`) {
+    return '/';
+  }
+  const repoSegment = repo.replace(/\.git$/i, '');
+  return `/${repoSegment}/`;
+}
+
+/**
+ * Normalize CLI/base override: "/" or "" → root; otherwise ensure leading and trailing "/".
+ */
+export function normalizeDeployBasePath(input: string): string {
+  const t = input.trim();
+  if (t === '' || t === '/') {
+    return '/';
+  }
+  let s = t.startsWith('/') ? t : `/${t}`;
+  if (!s.endsWith('/')) {
+    s = `${s}/`;
+  }
+  return s;
+}
+
+function resolvePublicPathFromRemote(repoUrl: string): string {
+  const parsed = parseRepoFromUrl(repoUrl);
+  if (!parsed) {
+    return '/';
+  }
+  return getGitHubPagesPublicPath(parsed.owner, parsed.repo);
+}
+
+type PkgJson = {
+  scripts?: Record<string, string>;
+  dependencies?: Record<string, string>;
+  devDependencies?: Record<string, string>;
+};
+
+/**
+ * Build-time flags for common React toolchains on GitHub Pages.
+ */
+function getGithubPagesBuildArgs(
+  pkg: PkgJson,
+  publicPath: string
+): { env: Record<string, string>; extraArgs: string[] } {
+  const buildScript = pkg.scripts?.['build'] ?? '';
+  const deps = { ...pkg.dependencies, ...pkg.devDependencies };
+  const env: Record<string, string> = {};
+  const extraArgs: string[] = [];
+
+  if (publicPath !== '/') {
+    // patternfly-react-seed webpack (and similar) uses ASSET_PATH for output.publicPath
+    env['ASSET_PATH'] = publicPath;
+  }
+  if (publicPath !== '/' && deps['react-scripts']) {
+    env['PUBLIC_URL'] = publicPath;
+  }
+  if (publicPath !== '/' && /\bvite\b/.test(buildScript)) {
+    extraArgs.push('--base', publicPath);
+  }
+
+  return { env, extraArgs };
+}
+
+/**
+ * GitHub Pages returns 404 for unknown paths; copy index.html so SPA refreshes on deep links work.
+ */
+async function ensureSpa404Html(distDir: string): Promise<void> {
+  const indexHtml = path.join(distDir, 'index.html');
+  const notFoundHtml = path.join(distDir, '404.html');
+  if ((await fs.pathExists(indexHtml)) && !(await fs.pathExists(notFoundHtml))) {
+    await fs.copy(indexHtml, notFoundHtml);
+    console.log('   Added 404.html (copy of index.html) for client-side route refreshes on GitHub Pages.');
+  }
 }
 
 /**
@@ -87,22 +174,28 @@ async function getPackageManager(cwd: string): Promise<'yarn' | 'pnpm' | 'npm'> 
 
 /**
  * Run build script in the project (npm run build / yarn build / pnpm build).
+ * Sets ASSET_PATH / PUBLIC_URL / Vite --base when publicPath is not "/" so assets resolve on project pages.
  */
-async function runBuild(cwd: string): Promise<void> {
+async function runBuild(cwd: string, publicPath: string): Promise<void> {
   const pkgPath = path.join(cwd, 'package.json');
-  const pkg = await fs.readJson(pkgPath);
-  const scripts = (pkg.scripts as Record<string, string>) || {};
+  const pkg = (await fs.readJson(pkgPath)) as PkgJson;
+  const scripts = pkg.scripts || {};
   if (!scripts['build']) {
     throw new Error(
       'No "build" script found in package.json. Add a build script or use --no-build and deploy an existing folder with -d/--dist-dir.'
     );
   }
 
+  const { env: ghEnv, extraArgs } = getGithubPagesBuildArgs(pkg, publicPath);
+  const env = Object.keys(ghEnv).length ? { ...process.env, ...ghEnv } : process.env;
+
   const pm = await getPackageManager(cwd);
   const runCmd = pm === 'npm' ? 'npm' : pm === 'yarn' ? 'yarn' : 'pnpm';
-  const args = pm === 'npm' ? ['run', 'build'] : ['build'];
-  console.log(`📦 Running build (${runCmd} ${args.join(' ')})...`);
-  await execa(runCmd, args, { cwd, stdio: 'inherit' });
+  const args = ['run', 'build', ...(extraArgs.length > 0 ? ['--', ...extraArgs] : [])];
+  const envNote =
+    publicPath !== '/' ? ` (GitHub Pages base: ${publicPath})` : '';
+  console.log(`📦 Running build (${runCmd} ${args.join(' ')})${envNote}...`);
+  await execa(runCmd, args, { cwd, stdio: 'inherit', env });
   console.log('✅ Build completed.\n');
 }
 
@@ -140,8 +233,11 @@ export async function runDeployToGitHubPages(
     );
   }
 
+  const publicPath =
+    options.basePath !== undefined ? normalizeDeployBasePath(options.basePath) : resolvePublicPathFromRemote(repoUrl);
+
   if (!skipBuild) {
-    await runBuild(cwd);
+    await runBuild(cwd, publicPath);
   }
 
   const absoluteDist = path.join(cwd, distDir);
@@ -150,6 +246,8 @@ export async function runDeployToGitHubPages(
       `Build output directory "${distDir}" does not exist. Run a build first or specify the correct directory with -d/--dist-dir.`
     );
   }
+
+  await ensureSpa404Html(absoluteDist);
 
   const parsed = parseRepoFromUrl(repoUrl);
   if (parsed) {
@@ -166,5 +264,11 @@ export async function runDeployToGitHubPages(
   });
   console.log('\n✅ Deployed to GitHub Pages.');
   console.log('   Enable GitHub Pages in your repo: Settings → Pages → Source: branch "' + branch + '".');
-  console.log('   If the site is at username.github.io/<repo-name>, set your app\'s base path (e.g. base: \'/<repo-name>/\' in Vite).\n');
+  if (publicPath !== '/') {
+    const basename = publicPath.replace(/\/$/, '');
+    console.log(
+      `   React Router: use <BrowserRouter basename="${basename}"> (or equivalent) so routes match ${publicPath}.`
+    );
+  }
+  console.log('');
 }
