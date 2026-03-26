@@ -3,6 +3,7 @@ jest.mock('fs-extra', () => ({
   default: {
     pathExists: jest.fn(),
     readJson: jest.fn(),
+    copy: jest.fn(),
   },
 }));
 
@@ -26,10 +27,15 @@ import path from 'path';
 import fs from 'fs-extra';
 import { execa } from 'execa';
 import ghPages from 'gh-pages';
-import { runDeployToGitHubPages } from '../gh-pages.js';
+import {
+  getGitHubPagesPublicPath,
+  normalizeDeployBasePath,
+  runDeployToGitHubPages,
+} from '../gh-pages.js';
 
 const mockPathExists = fs.pathExists as jest.MockedFunction<typeof fs.pathExists>;
 const mockReadJson = fs.readJson as jest.MockedFunction<typeof fs.readJson>;
+const mockCopy = fs.copy as jest.MockedFunction<typeof fs.copy>;
 const mockExeca = execa as jest.MockedFunction<typeof execa>;
 const mockGhPagesPublish = ghPages.publish as jest.MockedFunction<typeof ghPages.publish>;
 
@@ -38,7 +44,11 @@ const cwd = '/tmp/my-app';
 /** Setup pathExists to return values based on path (avoids brittle call-order chains) */
 function setupPathExists(checks: Record<string, boolean>) {
   mockPathExists.mockImplementation((p: string) => {
+    if (p.endsWith(`${path.sep}404.html`) || p.endsWith('/404.html')) {
+      return Promise.resolve(checks['404.html'] ?? false);
+    }
     for (const [key, value] of Object.entries(checks)) {
+      if (key === '404.html') continue;
       if (p.includes(key) || p === path.join(cwd, key)) return Promise.resolve(value);
     }
     return Promise.resolve(checks['*'] ?? false);
@@ -54,6 +64,22 @@ describe('runDeployToGitHubPages', () => {
 
   afterAll(() => {
     consoleLogSpy.mockRestore();
+  });
+
+  describe('getGitHubPagesPublicPath / normalizeDeployBasePath', () => {
+    it('uses root for user GitHub Pages repo', () => {
+      expect(getGitHubPagesPublicPath('octocat', 'octocat.github.io')).toBe('/');
+    });
+
+    it('uses /repo/ for project pages', () => {
+      expect(getGitHubPagesPublicPath('octocat', 'Hello-World')).toBe('/Hello-World/');
+    });
+
+    it('normalizes base path overrides', () => {
+      expect(normalizeDeployBasePath('/')).toBe('/');
+      expect(normalizeDeployBasePath('my-app')).toBe('/my-app/');
+      expect(normalizeDeployBasePath('/my-app')).toBe('/my-app/');
+    });
   });
 
   it('throws when package.json does not exist', async () => {
@@ -108,6 +134,7 @@ describe('runDeployToGitHubPages', () => {
       exitCode: 0,
     } as Awaited<ReturnType<typeof execa>>);
     mockGhPagesPublish.mockImplementation((_dir, _opts, cb) => cb(null));
+    mockCopy.mockResolvedValue(undefined);
 
     await runDeployToGitHubPages(cwd, { skipBuild: false });
 
@@ -115,7 +142,12 @@ describe('runDeployToGitHubPages', () => {
     expect(mockExeca).toHaveBeenNthCalledWith(2, 'npm', ['run', 'build'], {
       cwd,
       stdio: 'inherit',
+      env: expect.objectContaining({ ASSET_PATH: '/repo/' }),
     });
+    expect(mockCopy).toHaveBeenCalledWith(
+      path.join(cwd, 'dist', 'index.html'),
+      path.join(cwd, 'dist', '404.html')
+    );
     expect(mockGhPagesPublish).toHaveBeenCalledWith(
       path.join(cwd, 'dist'),
       { branch: 'gh-pages', repo: 'https://github.com/user/repo.git' },
@@ -140,13 +172,34 @@ describe('runDeployToGitHubPages', () => {
       exitCode: 0,
     } as Awaited<ReturnType<typeof execa>>);
     mockGhPagesPublish.mockImplementation((_dir, _opts, cb) => cb(null));
+    mockCopy.mockResolvedValue(undefined);
 
     await runDeployToGitHubPages(cwd, { skipBuild: false });
 
-    expect(mockExeca).toHaveBeenNthCalledWith(2, 'yarn', ['build'], {
+    expect(mockExeca).toHaveBeenNthCalledWith(2, 'yarn', ['run', 'build'], {
       cwd,
       stdio: 'inherit',
+      env: expect.objectContaining({ ASSET_PATH: '/repo/' }),
     });
+  });
+
+  it('does not set ASSET_PATH for <user>.github.io repository (site root)', async () => {
+    setupPathExists({ 'package.json': true, 'dist': true });
+    mockReadJson.mockResolvedValueOnce({
+      scripts: { build: 'webpack --config webpack.prod.js' },
+    });
+    mockExeca.mockResolvedValue({
+      stdout: 'https://github.com/octocat/octocat.github.io.git',
+      stderr: '',
+      exitCode: 0,
+    } as Awaited<ReturnType<typeof execa>>);
+    mockGhPagesPublish.mockImplementation((_dir, _opts, cb) => cb(null));
+    mockCopy.mockResolvedValue(undefined);
+
+    await runDeployToGitHubPages(cwd, { skipBuild: false });
+
+    const buildOpts = mockExeca.mock.calls[1][2] as { env?: NodeJS.ProcessEnv };
+    expect(buildOpts.env?.ASSET_PATH).toBeUndefined();
   });
 
   it('uses pnpm when pnpm-lock.yaml exists (and no yarn.lock)', async () => {
@@ -160,12 +213,14 @@ describe('runDeployToGitHubPages', () => {
       exitCode: 0,
     } as Awaited<ReturnType<typeof execa>>);
     mockGhPagesPublish.mockImplementation((_dir, _opts, cb) => cb(null));
+    mockCopy.mockResolvedValue(undefined);
 
     await runDeployToGitHubPages(cwd, { skipBuild: false });
 
-    expect(mockExeca).toHaveBeenNthCalledWith(2, 'pnpm', ['build'], {
+    expect(mockExeca).toHaveBeenNthCalledWith(2, 'pnpm', ['run', 'build', '--', '--base', '/repo/'], {
       cwd,
       stdio: 'inherit',
+      env: expect.objectContaining({ ASSET_PATH: '/repo/' }),
     });
   });
 
@@ -177,6 +232,7 @@ describe('runDeployToGitHubPages', () => {
       exitCode: 0,
     } as Awaited<ReturnType<typeof execa>>);
     mockGhPagesPublish.mockImplementation((_dir, _opts, cb) => cb(null));
+    mockCopy.mockResolvedValue(undefined);
 
     await runDeployToGitHubPages(cwd, { skipBuild: true });
 
@@ -228,6 +284,7 @@ describe('runDeployToGitHubPages', () => {
       exitCode: 0,
     } as Awaited<ReturnType<typeof execa>>);
     mockGhPagesPublish.mockImplementation((_dir, _opts, cb) => cb(null));
+    mockCopy.mockResolvedValue(undefined);
 
     await runDeployToGitHubPages(cwd, {
       skipBuild: true,
@@ -271,6 +328,7 @@ describe('runDeployToGitHubPages', () => {
       stderr: '',
       exitCode: 0,
     } as Awaited<ReturnType<typeof execa>>);
+    mockCopy.mockResolvedValue(undefined);
     mockGhPagesPublish.mockImplementation((_dir, _opts, cb) =>
       cb(new Error('Deploy failed'))
     );
