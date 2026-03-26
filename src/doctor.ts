@@ -9,7 +9,7 @@ interface CheckResult {
 /** Check if Node.js version is >= 20 */
 async function checkNodeVersion(): Promise<CheckResult> {
   const version = process.version;
-  const majorVersion = parseInt(version.slice(1).split('.')[0], 10);
+  const majorVersion = parseInt(version.slice(1).split('.')[0] || '0', 10);
 
   if (majorVersion >= 20) {
     return {
@@ -190,7 +190,7 @@ export async function runDoctor(autoFix: boolean = false): Promise<void> {
     console.log('⚠️  Some requirements are not satisfied.\n');
 
     // Check if Node.js version failed
-    if (!results[0].passed) {
+    if (!nodeResult.passed) {
       console.log('📌 Node.js must be manually installed or updated.');
       console.log('   Download from: https://nodejs.org/ (LTS version recommended)\n');
     }
