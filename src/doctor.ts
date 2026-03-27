@@ -73,25 +73,22 @@ function getGitHubCLIInstallCommand(): { command: string; args: string[]; descri
   const platform = os.platform();
 
   switch (platform) {
-    case 'darwin': // macOS
+    case 'darwin':
       return {
         command: 'brew',
         args: ['install', 'gh'],
         description: 'Installing GitHub CLI via Homebrew',
       };
     case 'linux': {
-      // Try to detect the Linux distribution
       try {
         const fs = require('fs');
         if (fs.existsSync('/etc/debian_version')) {
-          // Debian/Ubuntu
           return {
             command: 'sudo',
             args: ['apt', 'install', 'gh', '-y'],
             description: 'Installing GitHub CLI via apt',
           };
         } else if (fs.existsSync('/etc/redhat-release')) {
-          // Red Hat/Fedora/CentOS
           return {
             command: 'sudo',
             args: ['dnf', 'install', 'gh', '-y'],
@@ -99,11 +96,10 @@ function getGitHubCLIInstallCommand(): { command: string; args: string[]; descri
           };
         }
       } catch {
-        // If we can't detect, return null
       }
       return null;
     }
-    case 'win32': // Windows
+    case 'win32':
       return {
         command: 'winget',
         args: ['install', '--id', 'GitHub.cli'],
@@ -145,7 +141,6 @@ export async function runDoctor(autoFix: boolean = false): Promise<void> {
   const results: CheckResult[] = [];
   let allPassed = true;
 
-  // Check Node.js version
   const nodeResult = await checkNodeVersion();
   results.push(nodeResult);
   console.log(nodeResult.message);
@@ -153,7 +148,6 @@ export async function runDoctor(autoFix: boolean = false): Promise<void> {
     allPassed = false;
   }
 
-  // Check corepack
   const corepackResult = await checkCorepack();
   results.push(corepackResult);
   console.log(corepackResult.message);
@@ -171,7 +165,6 @@ export async function runDoctor(autoFix: boolean = false): Promise<void> {
     }
   }
 
-  // Check GitHub CLI
   const ghResult = await checkGitHubCLI();
   results.push(ghResult);
   console.log(ghResult.message);
@@ -189,7 +182,6 @@ export async function runDoctor(autoFix: boolean = false): Promise<void> {
   } else {
     console.log('⚠️  Some requirements are not satisfied.\n');
 
-    // Check if Node.js version failed
     if (!nodeResult.passed) {
       console.log('📌 Node.js must be manually installed or updated.');
       console.log('   Download from: https://nodejs.org/ (LTS version recommended)\n');
