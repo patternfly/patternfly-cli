@@ -34,9 +34,43 @@ patternfly-cli [command]
 
 ### Available Commands
 
+- **`doctor`**: Check if all requirements are installed and optionally fix them.
 - **`create`**: Create a new project from the available templates.
 - **`list`**: List all available templates (built-in and optional custom).
 - **`update`**: Update your project to a newer version.
+- **`init`**: Initialize a git repository and optionally create a GitHub repository.
+- **`save`**: Commit and push changes to the current branch.
+- **`load`**: Pull the latest updates from GitHub.
+- **`deploy`**: Build and deploy your app to GitHub Pages.
+
+### Doctor Command
+
+The `doctor` command checks if all requirements are met to use Patternfly CLI:
+
+```sh
+patternfly-cli doctor
+```
+
+This will check for:
+- Node.js version >= 20
+- Corepack enabled
+- GitHub CLI installed
+
+To automatically fix any missing requirements, use the `--fix` flag:
+
+```sh
+patternfly-cli doctor --fix
+```
+
+The `--fix` flag will:
+- Enable corepack if it's not already enabled
+- Install GitHub CLI using the appropriate package manager for your OS:
+  - macOS: Homebrew (`brew install gh`)
+  - Linux (Debian/Ubuntu): apt (`sudo apt install gh`)
+  - Linux (Fedora/RHEL): dnf (`sudo dnf install gh`)
+  - Windows: winget (`winget install --id GitHub.cli`)
+
+**Important Note about Node.js:** The `doctor` command **cannot** automatically install or update Node.js. If your Node.js version is below 20 or Node.js is not installed, you must manually download and install it from [https://nodejs.org/](https://nodejs.org/). We recommend installing the **LTS (Long Term Support)** version.
 
 ### Custom templates
 
