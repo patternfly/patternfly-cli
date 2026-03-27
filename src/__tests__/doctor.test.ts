@@ -1,20 +1,29 @@
-import fs from 'fs';
-import * as os from 'os';
-import { execa } from 'execa';
-import { runDoctor } from '../doctor.js';
-
 jest.mock('execa');
+
+jest.mock('inquirer', () => ({
+  __esModule: true,
+  default: {
+    prompt: jest.fn(),
+  },
+}));
 
 jest.mock('os', () => {
   const actual = jest.requireActual<typeof import('os')>('os');
   return {
     ...actual,
-    platform: jest.fn<typeof actual.platform>(() => actual.platform()),
+    platform: jest.fn(() => actual.platform()),
   };
 });
 
+import fs from 'fs';
+import * as os from 'os';
+import { execa } from 'execa';
+import inquirer from 'inquirer';
+import { runDoctor } from '../doctor.js';
+
 const mockedExeca = jest.mocked(execa);
 const mockedOsPlatform = os.platform as jest.MockedFunction<typeof os.platform>;
+const mockPrompt = inquirer.prompt as jest.Mock;
 
 function setNodeVersion(version: string): void {
   Object.defineProperty(process, 'version', {
@@ -35,6 +44,7 @@ describe('runDoctor', () => {
     consoleLogSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
     consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
     mockedOsPlatform.mockReturnValue('darwin');
+    mockPrompt.mockResolvedValue({ proceedWithSudo: true });
   });
 
   afterEach(() => {
@@ -187,7 +197,7 @@ describe('runDoctor', () => {
 
   it('invokes brew install gh on darwin when gh is missing and autoFix is true', async () => {
     mockedOsPlatform.mockReturnValue('darwin');
-    mockedExeca.mockImplementation(async (cmd, args) => {
+    mockedExeca.mockImplementation(async (cmd) => {
       if (cmd === 'corepack') {
         return { stdout: '0.28.0\n' } as Awaited<ReturnType<typeof execa>>;
       }
@@ -208,7 +218,7 @@ describe('runDoctor', () => {
 
   it('invokes winget on win32 when gh is missing and autoFix is true', async () => {
     mockedOsPlatform.mockReturnValue('win32');
-    mockedExeca.mockImplementation(async (cmd, args) => {
+    mockedExeca.mockImplementation(async (cmd) => {
       if (cmd === 'corepack') {
         return { stdout: '0.28.0\n' } as Awaited<ReturnType<typeof execa>>;
       }
@@ -249,11 +259,37 @@ describe('runDoctor', () => {
 
     try {
       await runDoctor(true);
+      expect(mockPrompt).toHaveBeenCalledTimes(1);
       expect(mockedExeca).toHaveBeenCalledWith(
         'sudo',
         ['apt', 'install', 'gh', '-y'],
         { stdio: 'inherit' },
       );
+    } finally {
+      existsSpy.mockRestore();
+    }
+  });
+
+  it('skips apt install when user declines sudo prompt under autoFix', async () => {
+    mockedOsPlatform.mockReturnValue('linux');
+    const existsSpy = jest.spyOn(fs, 'existsSync').mockImplementation((p) => p === '/etc/debian_version');
+    mockPrompt.mockResolvedValueOnce({ proceedWithSudo: false });
+
+    mockedExeca.mockImplementation(async (cmd) => {
+      if (cmd === 'corepack') {
+        return { stdout: '0.28.0\n' } as Awaited<ReturnType<typeof execa>>;
+      }
+      if (cmd === 'gh') {
+        throw new Error('not found');
+      }
+      return { stdout: '' } as Awaited<ReturnType<typeof execa>>;
+    });
+
+    try {
+      await runDoctor(true);
+      expect(mockPrompt).toHaveBeenCalledTimes(1);
+      expect(mockedExeca).not.toHaveBeenCalledWith('sudo', expect.anything(), expect.anything());
+      expect(logOutput()).toContain('GitHub CLI installation skipped');
     } finally {
       existsSpy.mockRestore();
     }
@@ -278,6 +314,7 @@ describe('runDoctor', () => {
 
     try {
       await runDoctor(true);
+      expect(mockPrompt).toHaveBeenCalledTimes(1);
       expect(mockedExeca).toHaveBeenCalledWith(
         'sudo',
         ['dnf', 'install', 'gh', '-y'],

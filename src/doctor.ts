@@ -1,4 +1,6 @@
+import { existsSync } from 'fs';
 import { execa } from 'execa';
+import inquirer from 'inquirer';
 import * as os from 'os';
 
 interface CheckResult {
@@ -47,7 +49,9 @@ async function enableCorepack(): Promise<void> {
     await execa('corepack', ['enable'], { stdio: 'inherit' });
     console.log('✅ Corepack enabled successfully\n');
   } catch (error) {
-    throw new Error('Failed to enable corepack. You may need to run this command with elevated privileges (sudo).');
+    throw new Error('Failed to enable corepack. You may need to run this command with elevated privileges (sudo).', {
+      cause: error,
+    });
   }
 }
 
@@ -81,14 +85,13 @@ function getGitHubCLIInstallCommand(): { command: string; args: string[]; descri
       };
     case 'linux': {
       try {
-        const fs = require('fs');
-        if (fs.existsSync('/etc/debian_version')) {
+        if (existsSync('/etc/debian_version')) {
           return {
             command: 'sudo',
             args: ['apt', 'install', 'gh', '-y'],
             description: 'Installing GitHub CLI via apt',
           };
-        } else if (fs.existsSync('/etc/redhat-release')) {
+        } else if (existsSync('/etc/redhat-release')) {
           return {
             command: 'sudo',
             args: ['dnf', 'install', 'gh', '-y'],
@@ -96,6 +99,7 @@ function getGitHubCLIInstallCommand(): { command: string; args: string[]; descri
           };
         }
       } catch {
+        // existsSync can throw (e.g. permission errors on some systems)
       }
       return null;
     }
@@ -118,6 +122,23 @@ async function installGitHubCLI(): Promise<void> {
     console.log('\n⚠️  Unable to automatically install GitHub CLI for your operating system.');
     console.log('Please visit https://cli.github.com/ for installation instructions.\n');
     return;
+  }
+
+  if (installCommand.command === 'sudo') {
+    const fullCommand = `${installCommand.command} ${installCommand.args.join(' ')}`;
+    const { proceedWithSudo } = await inquirer.prompt([
+      {
+        type: 'confirm',
+        name: 'proceedWithSudo',
+        message: `Installing GitHub CLI requires elevated privileges (root). Run the following?\n  ${fullCommand}`,
+        default: false,
+      },
+    ]);
+
+    if (!proceedWithSudo) {
+      console.log('\n⚠️  GitHub CLI installation skipped. Install manually from https://cli.github.com/\n');
+      return;
+    }
   }
 
   console.log(`\n🔧 ${installCommand.description}...`);
