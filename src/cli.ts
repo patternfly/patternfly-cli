@@ -11,25 +11,6 @@ import { runCreate } from './create.js';
 import { runSave } from './save.js';
 import { runLoad } from './load.js';
 import { runDeployToGitHubPages } from './gh-pages.js';
-import { runDoctor } from './doctor.js';
-
-/** Command to check and install requirements */
-program
-  .command('doctor')
-  .description('Check if all requirements are installed (Node.js >= 20, corepack, GitHub CLI)')
-  .option('--fix', 'Automatically install missing requirements')
-  .action(async (options) => {
-    try {
-      await runDoctor(options.fix);
-    } catch (error) {
-      if (error instanceof Error) {
-        console.error(`\n❌ ${error.message}\n`);
-      } else {
-        console.error(error);
-      }
-      process.exit(1);
-    }
-  });
 
 /** Command to create a new project */
 program
