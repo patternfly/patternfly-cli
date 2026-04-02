@@ -237,7 +237,7 @@ main() {
   printf '  patternfly-cli --help\n'
   printf '\n'
   printf 'If you just installed nvm, open a new terminal or run:\n'
-  printf '  export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"\n'
+  printf '  export NVM_DIR="%s/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"\n' "${HOME}"
   printf '\n'
 }
 
