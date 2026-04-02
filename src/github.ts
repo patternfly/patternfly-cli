@@ -61,15 +61,53 @@ async function ensureInitialCommit(projectPath: string): Promise<void> {
     });
   } catch {
     await execa('git', ['add', '.'], { stdio: 'inherit', cwd: projectPath });
-    await execa('git', ['commit', '-m', 'Initial commit'], {
-      stdio: 'inherit',
-      cwd: projectPath,
-    });
+    try {
+      await execa('git', ['commit', '-m', 'Initial commit'], {
+        stdio: 'inherit',
+        cwd: projectPath,
+      });
+    } catch (err) {
+      const stderr =
+        err && typeof err === 'object' && 'stderr' in err
+          ? String((err as { stderr?: unknown }).stderr ?? '')
+          : '';
+      const msg = err instanceof Error ? err.message : String(err);
+      const combined = `${msg}\n${stderr}`;
+      const looksLikeIdentityError =
+        /author identity unknown|please tell me who you are|unable to auto-detect email address|user\.email is not set|user\.name is not set/i.test(
+          combined,
+        );
+      if (looksLikeIdentityError) {
+        throw new Error(
+          'Could not create the initial git commit. Set your git identity, then try again:\n' +
+            '  git config --global user.name "Your Name"\n' +
+            '  git config --global user.email "you@example.com"',
+        );
+      }
+      throw err;
+    }
   }
 }
 
-/** 
- * Create a new GitHub repository and return its URL. Does not push. 
+/**
+ * After `create` removes the template `.git`, only a successful GitHub flow adds a repo back.
+ * Call this when the user asked for GitHub but setup did not finish.
+ */
+function logGitHubSetupDidNotComplete(projectPath: string): void {
+  const resolved = path.resolve(projectPath);
+  console.log('\n⚠️  Git repository setup did not complete.');
+  console.log('   The template’s .git directory was removed after clone, so this folder is not a git repo yet.\n');
+  console.log('   Check:');
+  console.log('   • GitHub CLI: `gh auth status` — if not logged in, run `gh auth login`');
+  console.log('   • Network and API errors above (permissions, repo name already exists, etc.)');
+  console.log(
+    '   • Your git user.name and/or user.email may not be set. Run `patternfly-cli init --git-init` in the project directory to set local git identity and try again.',
+  );
+  console.log(`\n   Project path: ${resolved}\n`);
+}
+
+/**
+ * Create a new GitHub repository and return its URL. Pushes the current branch via `gh repo create --push`.
  */
 export async function createRepo(options: {
   repoName: string;
@@ -114,7 +152,8 @@ export async function offerAndCreateGitHubRepo(projectPath: string): Promise<boo
     {
       type: 'confirm',
       name: 'createGitHub',
-      message: 'Would you like to create a GitHub repository for this project?',
+      message:
+        'Would you like to create a GitHub repository for this project? (requires GitHub CLI and gh auth login)',
       default: false,
     },
   ]);
@@ -124,7 +163,8 @@ export async function offerAndCreateGitHubRepo(projectPath: string): Promise<boo
   const auth = await checkGhAuth();
   if (!auth.ok) {
     console.log(`\n⚠️  ${auth.message}`);
-    console.log('   Skipping GitHub repository creation.\n');
+    console.log('   Skipping GitHub repository creation.');
+    logGitHubSetupDidNotComplete(projectPath);
     return false;
   }
 
@@ -149,7 +189,10 @@ export async function offerAndCreateGitHubRepo(projectPath: string): Promise<boo
     repoName = sanitizeRepoName(alternativeName.trim());
   }
 
-  if (!repoName) return false;
+  if (!repoName) {
+    logGitHubSetupDidNotComplete(projectPath);
+    return false;
+  }
 
   const repoUrl = `https://github.com/${auth.username}/${repoName}`;
   console.log('\n📋 The following will happen:\n');
@@ -168,7 +211,8 @@ export async function offerAndCreateGitHubRepo(projectPath: string): Promise<boo
   ]);
 
   if (!confirmCreate) {
-    console.log('\n❌ GitHub repository was not created.\n');
+    console.log('\n❌ GitHub repository was not created.');
+    logGitHubSetupDidNotComplete(projectPath);
     return false;
   }
 
@@ -187,7 +231,8 @@ export async function offerAndCreateGitHubRepo(projectPath: string): Promise<boo
     return true;
   } catch (err) {
     console.error('\n❌ Failed to create GitHub repository:');
-    if (err instanceof Error) console.error(`   ${err.message}\n`);
+    if (err instanceof Error) console.error(`   ${err.message}`);
+    logGitHubSetupDidNotComplete(projectPath);
     return false;
   }
 }
