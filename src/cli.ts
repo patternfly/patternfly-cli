@@ -4,6 +4,7 @@ import { program } from 'commander';
 import { execa } from 'execa';
 import fs from 'fs-extra';
 import path from 'path';
+import { fileURLToPath } from 'node:url';
 import { defaultTemplates } from './templates.js';
 import { mergeTemplates } from './template-loader.js';
 import { offerAndCreateGitHubRepo } from './github.js';
@@ -11,10 +12,14 @@ import { runCreate } from './create.js';
 import { runSave } from './save.js';
 import { runLoad } from './load.js';
 import { runDeployToGitHubPages } from './gh-pages.js';
+import { readPackageVersion } from './read-package-version.js';
+
+const packageJsonPath = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'package.json');
+const packageVersion = readPackageVersion(packageJsonPath);
 
 /** Command to create a new project */
 program
-  .version('1.0.0')
+  .version(packageVersion)
   .command('create')
   .description('Create a new project from a git template')
   .argument('[project-directory]', 'The directory to create the project in')
@@ -66,6 +71,26 @@ program
       }
     });
     console.log('');
+  });
+
+const PACKAGE_NAME = '@patternfly/patternfly-cli';
+
+/** Update this CLI to the latest published npm version */
+program
+  .command('cli-upgrade')
+  .description('Upgrade patternfly-cli to the latest version (npm global install)')
+  .action(async () => {
+    console.log(`Installing latest ${PACKAGE_NAME}...\n`);
+    try {
+      await execa('npm', ['install', '-g', `${PACKAGE_NAME}@latest`], { stdio: 'inherit' });
+      console.log('\n✅ patternfly-cli is up to date.');
+    } catch {
+      console.error(
+        '\n❌ Could not upgrade patternfly-cli. If you use another global package manager, run the equivalent of:',
+        `\n   npm install -g ${PACKAGE_NAME}@latest\n`,
+      );
+      process.exit(1);
+    }
   });
 
 /** Command to run PatternFly codemods on a directory */
