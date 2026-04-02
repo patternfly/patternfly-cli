@@ -23,6 +23,16 @@ require_cmd() {
   command -v "$1" >/dev/null 2>&1
 }
 
+# Run a command with elevation only when needed (non-root). Root can omit sudo.
+run_as_root() {
+  if [ "$(id -u)" -eq 0 ]; then
+    "$@"
+  else
+    require_cmd sudo || error "sudo is required to install system packages (install sudo or run this script as root)."
+    sudo "$@"
+  fi
+}
+
 ensure_nvm_loaded() {
   export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
   if [ -s "$NVM_DIR/nvm.sh" ]; then
@@ -89,54 +99,48 @@ install_gh_macos() {
 
 install_gh_linux_apt() {
   info "Installing GitHub CLI with apt (Debian/Ubuntu)."
-  require_cmd sudo || error "sudo is required to install packages with apt."
-  sudo apt-get update -y || error "apt-get update failed."
+  run_as_root apt-get update -y || error "apt-get update failed."
   if ! require_cmd curl; then
-    sudo apt-get install -y curl || error "Failed to install curl (needed for GitHub CLI apt setup)."
+    run_as_root apt-get install -y curl || error "Failed to install curl (needed for GitHub CLI apt setup)."
   fi
-  sudo install -d -m 755 /etc/apt/keyrings
+  run_as_root install -d -m 755 /etc/apt/keyrings
   curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg |
-    sudo tee /etc/apt/keyrings/githubcli-archive-keyring.gpg >/dev/null || error "Failed to add GitHub CLI apt key."
-  sudo chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg
+    run_as_root tee /etc/apt/keyrings/githubcli-archive-keyring.gpg >/dev/null || error "Failed to add GitHub CLI apt key."
+  run_as_root chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg
   echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" |
-    sudo tee /etc/apt/sources.list.d/github-cli.list >/dev/null || error "Failed to add GitHub CLI apt source."
-  sudo apt-get update -y || error "apt-get update failed after adding GitHub CLI source."
-  sudo apt-get install -y gh || error "apt failed to install gh."
+    run_as_root tee /etc/apt/sources.list.d/github-cli.list >/dev/null || error "Failed to add GitHub CLI apt source."
+  run_as_root apt-get update -y || error "apt-get update failed after adding GitHub CLI source."
+  run_as_root apt-get install -y gh || error "apt failed to install gh."
 }
 
 install_gh_linux_dnf() {
   info "Installing GitHub CLI with dnf (Fedora/RHEL-compatible)."
-  require_cmd sudo || error "sudo is required to install packages with dnf."
-  sudo dnf install -y 'dnf-command(config-manager)' || warn "dnf-command(config-manager) may already be installed; continuing."
-  sudo dnf config-manager --add-repo https://cli.github.com/packages/rpm/gh-cli.repo || error "Failed to add gh dnf repository."
-  sudo dnf install -y gh || error "dnf failed to install gh."
+  run_as_root dnf install -y 'dnf-command(config-manager)' || warn "dnf-command(config-manager) may already be installed; continuing."
+  run_as_root dnf config-manager --add-repo https://cli.github.com/packages/rpm/gh-cli.repo || error "Failed to add gh dnf repository."
+  run_as_root dnf install -y gh || error "dnf failed to install gh."
 }
 
 install_gh_linux_yum() {
   info "Installing GitHub CLI with yum (older RHEL/CentOS)."
-  require_cmd sudo || error "sudo is required to install packages with yum."
-  sudo yum install -y yum-utils || error "yum-utils installation failed."
-  sudo yum-config-manager --add-repo https://cli.github.com/packages/rpm/gh-cli.repo || error "Failed to add gh yum repository."
-  sudo yum install -y gh || error "yum failed to install gh."
+  run_as_root yum install -y yum-utils || error "yum-utils installation failed."
+  run_as_root yum-config-manager --add-repo https://cli.github.com/packages/rpm/gh-cli.repo || error "Failed to add gh yum repository."
+  run_as_root yum install -y gh || error "yum failed to install gh."
 }
 
 install_gh_linux_pacman() {
   info "Installing GitHub CLI with pacman (Arch)."
-  require_cmd sudo || error "sudo is required to install packages with pacman."
-  sudo pacman -Sy --noconfirm github-cli || error "pacman failed to install github-cli."
+  run_as_root pacman -Syu --noconfirm github-cli || error "pacman failed to install github-cli."
 }
 
 install_gh_linux_zypper() {
   info "Installing GitHub CLI with zypper (openSUSE)."
-  require_cmd sudo || error "sudo is required to install packages with zypper."
-  sudo zypper refresh
-  sudo zypper install -y gh || error "zypper failed to install gh."
+  run_as_root zypper refresh
+  run_as_root zypper install -y gh || error "zypper failed to install gh."
 }
 
 install_gh_linux_apk() {
   info "Installing GitHub CLI with apk (Alpine)."
-  require_cmd sudo || error "sudo is required to install packages with apk."
-  sudo apk add --no-cache github-cli || error "apk failed to install github-cli."
+  run_as_root apk add --no-cache github-cli || error "apk failed to install github-cli."
 }
 
 install_gh_linux() {

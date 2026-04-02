@@ -81,6 +81,7 @@ patternfly-cli [command]
 - **`create`**: Create a new project from the available templates.
 - **`list`**: List all available templates (built-in and optional custom).
 - **`update`**: Update your project to a newer version.
+- **`cli-upgrade`**: Upgrade the globally installed CLI to the latest npm release. It runs `npm install -g @patternfly/patternfly-cli@latest`; use your package manager’s equivalent if you did not install with npm.
 - **`init`**: Initialize a git repository and optionally create a GitHub repository.
 - **`save`**: Commit and push changes to the current branch.
 - **`load`**: Pull the latest updates from GitHub.
