@@ -4,6 +4,11 @@
 
 set -euo pipefail
 
+if [ -z "${HOME:-}" ]; then
+  printf '\nERROR: HOME is not set. Set it to your home directory and re-run this script.\n\n' >&2
+  exit 1
+fi
+
 NVM_VERSION="${NVM_VERSION:-v0.40.3}"
 
 error() {
@@ -70,9 +75,12 @@ install_node_via_nvm() {
 }
 
 ensure_node() {
-  if require_cmd node; then
-    info "Node.js is already installed: $(command -v node) ($(node --version))"
+  if require_cmd node && require_cmd npm && require_cmd corepack; then
+    info "Node.js is already installed: $(command -v node) ($(node --version)), npm $(npm --version)"
     return 0
+  fi
+  if require_cmd node; then
+    error "Node.js is on PATH but this installer also requires npm and Corepack (corepack). Install a full Node.js toolchain, then re-run."
   fi
   install_node_via_nvm
 }
