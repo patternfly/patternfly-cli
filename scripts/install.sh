@@ -124,7 +124,14 @@ install_gh_linux_apt() {
 install_gh_linux_dnf() {
   info "Installing GitHub CLI with dnf (Fedora/RHEL-compatible)."
   run_as_root dnf install -y 'dnf-command(config-manager)' || warn "dnf-command(config-manager) may already be installed; continuing."
-  run_as_root dnf config-manager --add-repo https://cli.github.com/packages/rpm/gh-cli.repo || error "Failed to add gh dnf repository."
+  local gh_repo="https://cli.github.com/packages/rpm/gh-cli.repo"
+  # DNF 5 (Fedora 41+): addrepo --from-repofile=. DNF 4: --add-repo URL
+  # See https://dnf5.readthedocs.io/en/stable/dnf5_plugins/config-manager.8.html
+  if dnf config-manager addrepo --help >/dev/null 2>&1; then
+    run_as_root dnf config-manager addrepo --from-repofile="${gh_repo}" || error "Failed to add gh dnf repository."
+  else
+    run_as_root dnf config-manager --add-repo "${gh_repo}" || error "Failed to add gh dnf repository."
+  fi
   run_as_root dnf install -y gh || error "dnf failed to install gh."
 }
 
