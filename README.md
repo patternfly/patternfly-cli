@@ -10,15 +10,59 @@ Patternfly CLI is a command-line tool designed for scaffolding projects, perform
 
 ## Installation
 
-To install the CLI globally, use npm:
+### Install script (macOS and Linux)
+
+You can pipe the repository install script into `bash`. It installs Node.js with [nvm](https://github.com/nvm-sh/nvm) when `node` is not available, enables Corepack, installs the [GitHub CLI](https://cli.github.com/) when it is missing, then installs the CLI globally from npm:
 
 ```sh
-npm install -g patternfly-cli
+curl -fsSL https://raw.githubusercontent.com/patternfly/patternfly-cli/main/scripts/install.sh | bash
+```
+
+Swap `main` for another branch or tag if you need a specific revision. To save the script and inspect it before running:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/patternfly/patternfly-cli/main/scripts/install.sh -o install-patternfly-cli.sh
+bash install-patternfly-cli.sh
+```
+
+The script may prompt for `sudo` when your system package manager installs GitHub CLI.
+
+### npm
+
+If you already have the [prerequisites](#prerequisites) on your machine, install the published package globally:
+
+```sh
+npm install -g @patternfly/patternfly-cli
+```
+
+## Uninstall
+
+### Uninstall script (macOS and Linux)
+
+You can pipe the repository uninstall script into `bash`. It removes the globally installed `@patternfly/patternfly-cli` package with npm. It does **not** remove Node.js, nvm, Corepack, or GitHub CLI.
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/patternfly/patternfly-cli/main/scripts/uninstall.sh | bash
+```
+
+Swap `main` for another branch or tag if you need a specific revision. To save the script and inspect it before running:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/patternfly/patternfly-cli/main/scripts/uninstall.sh -o uninstall-patternfly-cli.sh
+bash uninstall-patternfly-cli.sh
+```
+
+### npm
+
+If you installed with npm globally, you can remove the package with:
+
+```sh
+npm uninstall -g @patternfly/patternfly-cli
 ```
 
 ## Prerequisites
 
-Before using the Patternfly CLI, install the following:
+If you use the [install script](#install-script-macos-and-linux) on macOS or Linux, it covers the items below (you may still need administrator access for system packages). Otherwise, install the following yourself before using the CLI:
 
 - **Node.js and npm** (v20–24) — [npm](https://www.npmjs.com/) · [Node.js downloads](https://nodejs.org/)
 - **Corepack** — enable with `corepack enable` (included with Node.js). Run the command after installing npm.
@@ -34,43 +78,14 @@ patternfly-cli [command]
 
 ### Available Commands
 
-- **`doctor`**: Check if all requirements are installed and optionally fix them.
 - **`create`**: Create a new project from the available templates.
 - **`list`**: List all available templates (built-in and optional custom).
 - **`update`**: Update your project to a newer version.
+- **`cli-upgrade`**: Upgrade the globally installed CLI to the latest npm release. It runs `npm install -g @patternfly/patternfly-cli@latest`; use your package manager’s equivalent if you did not install with npm.
 - **`init`**: Initialize a git repository and optionally create a GitHub repository.
 - **`save`**: Commit and push changes to the current branch.
 - **`load`**: Pull the latest updates from GitHub.
 - **`deploy`**: Build and deploy your app to GitHub Pages.
-
-### Doctor Command
-
-The `doctor` command checks if all requirements are met to use Patternfly CLI:
-
-```sh
-patternfly-cli doctor
-```
-
-This will check for:
-- Node.js version >= 20
-- Corepack enabled
-- GitHub CLI installed
-
-To automatically fix any missing requirements, use the `--fix` flag:
-
-```sh
-patternfly-cli doctor --fix
-```
-
-The `--fix` flag will:
-- Enable corepack if it's not already enabled
-- Install GitHub CLI using the appropriate package manager for your OS:
-  - macOS: Homebrew (`brew install gh`)
-  - Linux (Debian/Ubuntu): apt (`sudo apt install gh`)
-  - Linux (Fedora/RHEL): dnf (`sudo dnf install gh`)
-  - Windows: winget (`winget install --id GitHub.cli`)
-
-**Important Note about Node.js:** The `doctor` command **cannot** automatically install or update Node.js. If your Node.js version is below 20 or Node.js is not installed, you must manually download and install it from [https://nodejs.org/](https://nodejs.org/). We recommend installing the **LTS (Long Term Support)** version.
 
 ### Custom templates
 
