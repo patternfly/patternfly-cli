@@ -55,6 +55,20 @@ export function getGitHubPagesPublicPath(owner: string, repo: string): string {
 }
 
 /**
+ * Public HTTPS URL for the site on GitHub Pages (user/org pages vs project pages).
+ */
+export function getGitHubPagesSiteUrl(owner: string, repo: string): string {
+  const repoSegment = repo.replace(/\.git$/i, '');
+  const repoLower = repoSegment.toLowerCase();
+  const ownerLower = owner.toLowerCase();
+  const host = `${ownerLower}.github.io`;
+  if (repoLower === `${ownerLower}.github.io`) {
+    return `https://${host}/`;
+  }
+  return `https://${host}/${repoSegment}/`;
+}
+
+/**
  * Normalize CLI/base override: "/" or "" → root; otherwise ensure leading and trailing "/".
  */
 export function normalizeDeployBasePath(input: string): string {
@@ -263,6 +277,11 @@ export async function runDeployToGitHubPages(
     );
   });
   console.log('\n✅ Deployed to GitHub Pages.');
+  if (parsed) {
+    const siteUrl = getGitHubPagesSiteUrl(parsed.owner, parsed.repo);
+    console.log(`🌐 Your site: ${siteUrl}`);
+    console.log('   (URL may take a minute to update after the first deploy.)\n');
+  }
   console.log('   Enable GitHub Pages in your repo: Settings → Pages → Source: branch "' + branch + '".');
   if (publicPath !== '/') {
     const basename = publicPath.replace(/\/$/, '');

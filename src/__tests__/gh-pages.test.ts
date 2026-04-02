@@ -29,6 +29,7 @@ import { execa } from 'execa';
 import ghPages from 'gh-pages';
 import {
   getGitHubPagesPublicPath,
+  getGitHubPagesSiteUrl,
   normalizeDeployBasePath,
   runDeployToGitHubPages,
 } from '../gh-pages.js';
@@ -73,6 +74,16 @@ describe('runDeployToGitHubPages', () => {
 
     it('uses /repo/ for project pages', () => {
       expect(getGitHubPagesPublicPath('octocat', 'Hello-World')).toBe('/Hello-World/');
+    });
+
+    it('builds HTTPS site URL for project pages', () => {
+      expect(getGitHubPagesSiteUrl('octocat', 'Hello-World')).toBe(
+        'https://octocat.github.io/Hello-World/'
+      );
+    });
+
+    it('builds HTTPS site URL for user/org pages repo', () => {
+      expect(getGitHubPagesSiteUrl('octocat', 'octocat.github.io')).toBe('https://octocat.github.io/');
     });
 
     it('normalizes base path overrides', () => {
@@ -158,6 +169,9 @@ describe('runDeployToGitHubPages', () => {
     );
     expect(consoleLogSpy).toHaveBeenCalledWith(
       expect.stringContaining('Deployed to GitHub Pages')
+    );
+    expect(consoleLogSpy).toHaveBeenCalledWith(
+      expect.stringContaining('https://user.github.io/repo/')
     );
   });
 
