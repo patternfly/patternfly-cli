@@ -45,16 +45,25 @@ program
   .argument('[path]', 'Path to the project directory (defaults to current directory)')
   .option('--git-init', 'Prompt for git user.name and user.email and store them locally for this repository')
   .action(async (dirPath, options) => {
-    const cwd = dirPath ? path.resolve(dirPath) : process.cwd();
-    const gitDir = path.join(cwd, '.git');
-    if (!(await fs.pathExists(gitDir))) {
-      await execa('git', ['init'], { stdio: 'inherit', cwd });
-      console.log('✅ Git repository initialized.\n');
+    try {
+      const cwd = dirPath ? path.resolve(dirPath) : process.cwd();
+      const gitDir = path.join(cwd, '.git');
+      if (!(await fs.pathExists(gitDir))) {
+        await execa('git', ['init'], { stdio: 'inherit', cwd });
+        console.log('✅ Git repository initialized.\n');
+      }
+      if (options.gitInit) {
+        await promptAndSetLocalGitUser(cwd);
+      }
+      await offerAndCreateGitHubRepo(cwd);
+    } catch (error) {
+      if (error instanceof Error) {
+        console.error(`\n❌ ${error.message}\n`);
+      } else {
+        console.error(error);
+      }
+      process.exit(1);
     }
-    if (options.gitInit) {
-      await promptAndSetLocalGitUser(cwd);
-    }
-    await offerAndCreateGitHubRepo(cwd);
   });
 
 /** Command to list all available templates */

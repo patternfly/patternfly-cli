@@ -66,12 +66,25 @@ async function ensureInitialCommit(projectPath: string): Promise<void> {
         stdio: 'inherit',
         cwd: projectPath,
       });
-    } catch {
-      throw new Error(
-        'Could not create the initial git commit. Set your git identity, then try again:\n' +
-          '  git config --global user.name "Your Name"\n' +
-          '  git config --global user.email "you@example.com"',
-      );
+    } catch (err) {
+      const stderr =
+        err && typeof err === 'object' && 'stderr' in err
+          ? String((err as { stderr?: unknown }).stderr ?? '')
+          : '';
+      const msg = err instanceof Error ? err.message : String(err);
+      const combined = `${msg}\n${stderr}`;
+      const looksLikeIdentityError =
+        /author identity unknown|please tell me who you are|unable to auto-detect email address|user\.email is not set|user\.name is not set/i.test(
+          combined,
+        );
+      if (looksLikeIdentityError) {
+        throw new Error(
+          'Could not create the initial git commit. Set your git identity, then try again:\n' +
+            '  git config --global user.name "Your Name"\n' +
+            '  git config --global user.email "you@example.com"',
+        );
+      }
+      throw err;
     }
   }
 }
@@ -87,12 +100,14 @@ function logGitHubSetupDidNotComplete(projectPath: string): void {
   console.log('   Check:');
   console.log('   • GitHub CLI: `gh auth status` — if not logged in, run `gh auth login`');
   console.log('   • Network and API errors above (permissions, repo name already exists, etc.)');
-  console.log('   • Your user name and/or user email my not be set. Run `patternfly-cli init --git-init` in the project directory (this will set the your  `user.name` and `user.email` and try to again)');
+  console.log(
+    '   • Your git user.name and/or user.email may not be set. Run `patternfly-cli init --git-init` in the project directory to set local git identity and try again.',
+  );
   console.log(`\n   Project path: ${resolved}\n`);
 }
 
 /**
- * Create a new GitHub repository and return its URL. Does not push.
+ * Create a new GitHub repository and return its URL. Pushes the current branch via `gh repo create --push`.
  */
 export async function createRepo(options: {
   repoName: string;

@@ -70,11 +70,11 @@ describe('promptAndSetLocalGitUser', () => {
 
     await promptAndSetLocalGitUser('/tmp/proj');
 
-    expect(mockExeca).not.toHaveBeenCalledWith(
-      'git',
-      ['config', '--local', 'user.name', expect.any(String)],
-      expect.any(Object),
+    const localConfigCalls = mockExeca.mock.calls.filter(
+      ([cmd, args]) =>
+        cmd === 'git' && Array.isArray(args) && (args as string[]).includes('--local'),
     );
+    expect(localConfigCalls).toHaveLength(0);
     expect(consoleErrorSpy).toHaveBeenCalledWith(
       expect.stringContaining('Both user.name and user.email are required'),
     );
