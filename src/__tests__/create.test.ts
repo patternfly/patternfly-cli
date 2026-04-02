@@ -36,10 +36,11 @@ import { sanitizeRepoName, offerAndCreateGitHubRepo } from '../github.js';
 import { runCreate } from '../create.js';
 import { defaultTemplates } from '../templates.js';
 
-const mockPathExists = fs.pathExists as jest.MockedFunction<typeof fs.pathExists>;
+/** Partial `fs-extra` mock: use `jest.Mock` for `mockResolvedValue` (typed mocks infer `never` here). */
+const mockPathExists = fs.pathExists as jest.MockedFunction<typeof fs.pathExists> & jest.Mock;
 const mockReadJson = fs.readJson as jest.MockedFunction<typeof fs.readJson>;
 const mockWriteJson = fs.writeJson as jest.MockedFunction<typeof fs.writeJson>;
-const mockRemove = fs.remove as jest.MockedFunction<typeof fs.remove>;
+const mockRemove = fs.remove as jest.MockedFunction<typeof fs.remove> & jest.Mock;
 const mockExeca = execa as jest.MockedFunction<typeof execa>;
 const mockPrompt = inquirer.prompt as jest.MockedFunction<typeof inquirer.prompt>;
 const mockOfferAndCreateGitHubRepo = offerAndCreateGitHubRepo as jest.MockedFunction<
@@ -62,7 +63,7 @@ function setupHappyPathMocks() {
   mockReadJson.mockResolvedValue({ name: 'template-name', version: '0.0.0' });
   mockWriteJson.mockResolvedValue(undefined);
   mockRemove.mockResolvedValue(undefined);
-  mockOfferAndCreateGitHubRepo.mockResolvedValue(undefined);
+  mockOfferAndCreateGitHubRepo.mockResolvedValue(false);
   mockPrompt.mockResolvedValue(projectData);
   return projectData;
 }

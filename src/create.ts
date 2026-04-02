@@ -159,7 +159,7 @@ export async function runCreate(
     await execa(packageManager, ['install'], { cwd: projectPath, stdio: 'inherit' });
     console.log('✅ Dependencies installed.');
 
-    // Optional: Create GitHub repository
+    // Optional: Create GitHub repository (explains what to check if it does not complete)
     await offerAndCreateGitHubRepo(projectPath);
 
     // Let the user know the project was created successfully

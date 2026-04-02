@@ -13,6 +13,7 @@ import { runSave } from './save.js';
 import { runLoad } from './load.js';
 import { runDeployToGitHubPages } from './gh-pages.js';
 import { readPackageVersion } from './read-package-version.js';
+import { promptAndSetLocalGitUser } from './git-user-config.js';
 
 const packageJsonPath = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'package.json');
 const packageVersion = readPackageVersion(packageJsonPath);
@@ -42,12 +43,16 @@ program
   .command('init')
   .description('Initialize the current directory (or path) as a git repo and optionally create a GitHub repository')
   .argument('[path]', 'Path to the project directory (defaults to current directory)')
-  .action(async (dirPath) => {
+  .option('--git-init', 'Prompt for git user.name and user.email and store them locally for this repository')
+  .action(async (dirPath, options) => {
     const cwd = dirPath ? path.resolve(dirPath) : process.cwd();
     const gitDir = path.join(cwd, '.git');
     if (!(await fs.pathExists(gitDir))) {
       await execa('git', ['init'], { stdio: 'inherit', cwd });
       console.log('✅ Git repository initialized.\n');
+    }
+    if (options.gitInit) {
+      await promptAndSetLocalGitUser(cwd);
     }
     await offerAndCreateGitHubRepo(cwd);
   });
