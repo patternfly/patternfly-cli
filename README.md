@@ -35,6 +35,31 @@ If you already have the [prerequisites](#prerequisites) on your machine, install
 npm install -g @patternfly/patternfly-cli
 ```
 
+## Uninstall
+
+### Uninstall script (macOS and Linux)
+
+You can pipe the repository uninstall script into `bash`. It removes the globally installed `@patternfly/patternfly-cli` package with npm. It does **not** remove Node.js, nvm, Corepack, or GitHub CLI.
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/patternfly/patternfly-cli/main/scripts/uninstall.sh | bash
+```
+
+Swap `main` for another branch or tag if you need a specific revision. To save the script and inspect it before running:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/patternfly/patternfly-cli/main/scripts/uninstall.sh -o uninstall-patternfly-cli.sh
+bash uninstall-patternfly-cli.sh
+```
+
+### npm
+
+If you installed with npm globally, you can remove the package with:
+
+```sh
+npm uninstall -g @patternfly/patternfly-cli
+```
+
 ## Prerequisites
 
 If you use the [install script](#install-script-macos-and-linux) on macOS or Linux, it covers the items below (you may still need administrator access for system packages). Otherwise, install the following yourself before using the CLI:
