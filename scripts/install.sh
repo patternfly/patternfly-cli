@@ -248,7 +248,7 @@ main() {
   printf 'To see available commands, run the CLI with:\n'
   printf '  patternfly-cli --help\n'
   printf '\n'
-  printf
+  printf '\n'
   printf 'SUCCESS: PatternFly CLI is installed.\n'
   printf '\n'
   
