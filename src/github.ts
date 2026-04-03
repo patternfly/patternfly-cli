@@ -82,6 +82,7 @@ async function ensureInitialCommit(projectPath: string): Promise<void> {
           'Could not create the initial git commit. Set your git identity, then try again:\n' +
             '  git config --global user.name "Your Name"\n' +
             '  git config --global user.email "you@example.com"',
+          { cause: err },
         );
       }
       throw err;

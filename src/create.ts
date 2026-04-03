@@ -41,25 +41,22 @@ export async function runCreate(
         type: 'input',
         name: 'projectDirectory',
         message: 'Please provide the directory where you want to create the project?',
-        default: 'my-app',
+        default: path.resolve('my-app'),
       },
     ]);
     projectDirectory = projectDirAnswer.projectDirectory;
   }
 
+  const projectPath = path.resolve(projectDirectory?.trim() || 'my-app');
+
   // If template name is not provided, show available templates and let user select
   if (!templateName) {
-    console.log('\n📋 Available templates:\n');
-    templatesToUse.forEach(t => {
-      console.log(`  ${t.name.padEnd(12)} - ${t.description}`);
-    });
-    console.log('');
-
+  
     const templateQuestion = [
       {
         type: 'list',
         name: 'templateName',
-        message: 'Select a template:',
+        message: 'Select a project template that will be used to create your project:',
         choices: templatesToUse.map(t => ({
           name: `${t.name} - ${t.description}`,
           value: t.name,
@@ -85,9 +82,6 @@ export async function runCreate(
 
   const templateRepoUrl = options?.ssh && template.repoSSH ? template.repoSSH : template.repo;
 
-  // Define the full path for the new project (projectDirectory is set above via arg or prompt)
-  const dir = projectDirectory ?? 'my-app';
-  const projectPath = path.resolve(dir);
   console.log(`Cloning template "${templateName}" from ${templateRepoUrl} into ${projectPath}...`);
 
   try {
@@ -165,7 +159,7 @@ export async function runCreate(
     // Let the user know the project was created successfully
     console.log('\n✨ Project created successfully! ✨\n');
     console.log(`To get started:`);
-    console.log(`  cd ${dir}`);
+    console.log(`  cd ${projectPath}`);
     console.log('  Happy coding! 🚀');
   } catch (error) {
     console.error('❌ An error occurred:');

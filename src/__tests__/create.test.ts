@@ -117,7 +117,7 @@ describe('runCreate', () => {
           type: 'input',
           name: 'projectDirectory',
           message: expect.stringContaining('directory where you want to create the project'),
-          default: 'my-app',
+          default: path.resolve('my-app'),
         }),
       ])
     );
@@ -136,7 +136,7 @@ describe('runCreate', () => {
         expect.objectContaining({
           type: 'list',
           name: 'templateName',
-          message: 'Select a template:',
+          message: 'Select a project template that will be used to create your project:',
           choices: expect.any(Array),
         }),
       ])
@@ -261,7 +261,7 @@ describe('runCreate', () => {
     await runCreate(projectDir, 'starter');
 
     expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('Project created successfully'));
-    expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining(`cd ${projectDir}`));
+    expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining(`cd ${projectPath}`));
   });
 
   it('cleans up project directory and rethrows when clone fails', async () => {
