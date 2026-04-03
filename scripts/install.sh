@@ -245,15 +245,13 @@ main() {
   ensure_gh
   install_patternfly_cli
 
-  printf '\n'
-  printf 'SUCCESS: PatternFly CLI is installed.\n'
-  printf '\n'
-  printf 'Run the CLI with:\n'
+  printf 'To see available commands, run the CLI with:\n'
   printf '  patternfly-cli --help\n'
   printf '\n'
-  printf 'If you just installed nvm, open a new terminal or run:\n'
-  printf '  export NVM_DIR="%s/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"\n' "${HOME}"
+  printf
+  printf 'SUCCESS: PatternFly CLI is installed.\n'
   printf '\n'
+  
 }
 
 main "$@"
