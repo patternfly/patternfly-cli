@@ -19,7 +19,8 @@ export const defaultTemplates: Template[] = [
         description: "A starter template for Patternfly react typescript project",
         repo: "https://github.com/patternfly/patternfly-react-seed.git",
         repoSSH: "git@github.com:patternfly/patternfly-react-seed.git",
-        packageManager: "yarn"
+        options: ["--single-branch", "--branch", "main"],
+        packageManager: "npm"
     },
     {
         name: "compass-starter",
