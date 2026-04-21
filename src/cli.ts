@@ -14,6 +14,7 @@ import { runLoad } from './load.js';
 import { runDeployToGitHubPages } from './gh-pages.js';
 import { readPackageVersion } from './read-package-version.js';
 import { promptAndSetLocalGitUser } from './git-user-config.js';
+import { runGreyscale } from './greyscale.js';
 
 const packageJsonPath = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'package.json');
 const packageVersion = readPackageVersion(packageJsonPath);
@@ -195,6 +196,25 @@ program
         branch: options.branch,
         basePath: options.base,
       });
+    } catch (error) {
+      if (error instanceof Error) {
+        console.error(`\n❌ ${error.message}\n`);
+      } else {
+        console.error(error);
+      }
+      process.exit(1);
+    }
+  });
+
+/** Command to apply greyscale filter to the entire application */
+program
+  .command('greyscale')
+  .description('Apply a greyscale filter to the entire DOM by adding a CSS file to your React entry point')
+  .argument('<entry-point>', 'Path to the React entry point file (e.g., src/index.tsx or src/main.tsx)')
+  .action(async (entryPoint) => {
+    const cwd = process.cwd();
+    try {
+      await runGreyscale(entryPoint, cwd);
     } catch (error) {
       if (error instanceof Error) {
         console.error(`\n❌ ${error.message}\n`);
