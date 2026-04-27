@@ -1,9 +1,9 @@
 import path from 'path';
 import fs from 'fs-extra';
-import { readPackageVersion } from '../read-package-version.js';
+import { readPackageVersion } from '../src/read-package-version.js';
 
 /** Repo root package.json (stable under Jest + ts-jest CommonJS emit; avoids cwd brittleness). */
-const repoPackageJson = path.join(__dirname, '../../package.json');
+const repoPackageJson = path.join(__dirname, '../package.json');
 
 describe('readPackageVersion', () => {
   it('returns the version from the repo package.json', () => {

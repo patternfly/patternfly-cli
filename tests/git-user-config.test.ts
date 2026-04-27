@@ -10,7 +10,7 @@ jest.mock('execa', () => ({
 
 import inquirer from 'inquirer';
 import { execa } from 'execa';
-import { promptAndSetLocalGitUser } from '../git-user-config.js';
+import { promptAndSetLocalGitUser } from '../src/git-user-config.js';
 
 const mockPrompt = inquirer.prompt as jest.MockedFunction<typeof inquirer.prompt>;
 const mockExeca = execa as jest.MockedFunction<typeof execa>;

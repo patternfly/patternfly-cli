@@ -23,8 +23,8 @@ jest.mock('execa', () => ({
   execa: jest.fn(),
 }));
 
-jest.mock('../github.js', () => ({
-  ...jest.requireActual('../github.js'),
+jest.mock('../src/github.js', () => ({
+  ...jest.requireActual('../src/github.js'),
   offerAndCreateGitHubRepo: jest.fn(),
 }));
 
@@ -32,9 +32,9 @@ import path from 'path';
 import fs from 'fs-extra';
 import { execa } from 'execa';
 import inquirer from 'inquirer';
-import { sanitizeRepoName, offerAndCreateGitHubRepo } from '../github.js';
-import { runCreate } from '../create.js';
-import { defaultTemplates } from '../templates.js';
+import { sanitizeRepoName, offerAndCreateGitHubRepo } from '../src/github.js';
+import { runCreate } from '../src/create.js';
+import { defaultTemplates } from '../src/templates.js';
 
 /** Partial `fs-extra` mock: use `jest.Mock` for `mockResolvedValue` (typed mocks infer `never` here). */
 const mockPathExists = fs.pathExists as jest.MockedFunction<typeof fs.pathExists> & jest.Mock;
@@ -290,7 +290,7 @@ describe('runCreate', () => {
   });
 
   it('uses custom templates when templateFile option is provided', async () => {
-    const fixturesDir = path.join(process.cwd(), 'src', '__tests__', 'fixtures');
+    const fixturesDir = path.join(process.cwd(), 'tests', 'fixtures');
     const customPath = path.join(fixturesDir, 'valid-templates.json');
     setupHappyPathMocks();
     mockPrompt.mockResolvedValueOnce(projectData);
