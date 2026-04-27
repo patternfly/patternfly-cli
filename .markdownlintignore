@@ -1,0 +1,4 @@
+node_modules/
+dist/
+.agentready/
+CHANGELOG.md

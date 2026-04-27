@@ -1,9 +1,9 @@
 import path from 'path';
 import fs from 'fs-extra';
-import { loadCustomTemplates, mergeTemplates } from '../template-loader.js';
-import templates from '../templates.js';
+import { loadCustomTemplates, mergeTemplates } from '../src/template-loader.js';
+import templates from '../src/templates.js';
 
-const fixturesDir = path.join(process.cwd(), 'src', '__tests__', 'fixtures');
+const fixturesDir = path.join(process.cwd(), 'tests', 'fixtures');
 
 describe('loadCustomTemplates', () => {
   const exitSpy = jest.spyOn(process, 'exit').mockImplementation(((code?: number) => {

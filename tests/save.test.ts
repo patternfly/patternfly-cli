@@ -17,15 +17,15 @@ jest.mock('inquirer', () => ({
   },
 }));
 
-jest.mock('../github.js', () => ({
+jest.mock('../src/github.js', () => ({
   offerAndCreateGitHubRepo: jest.fn(),
 }));
 
 import fs from 'fs-extra';
 import { execa } from 'execa';
 import inquirer from 'inquirer';
-import { offerAndCreateGitHubRepo } from '../github.js';
-import { runSave } from '../save.js';
+import { offerAndCreateGitHubRepo } from '../src/github.js';
+import { runSave } from '../src/save.js';
 
 const mockPathExists = fs.pathExists as jest.MockedFunction<typeof fs.pathExists>;
 const mockExeca = execa as jest.MockedFunction<typeof execa>;

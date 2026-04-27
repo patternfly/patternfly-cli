@@ -1,6 +1,7 @@
 # Patternfly CLI
 
-Patternfly CLI is a command-line tool designed for scaffolding projects, performing code modifications, and running project-related tasks. It aims to streamline development workflows and improve productivity.
+Patternfly CLI is a command-line tool designed for scaffolding projects, performing code modifications, and
+running project-related tasks. It aims to streamline development workflows and improve productivity.
 
 ## Features
 
@@ -12,7 +13,9 @@ Patternfly CLI is a command-line tool designed for scaffolding projects, perform
 
 ### Install script (macOS and Linux)
 
-You can pipe the repository install script into `bash`. It installs Node.js with [nvm](https://github.com/nvm-sh/nvm) when `node` is not available, enables Corepack, installs the [GitHub CLI](https://cli.github.com/) when it is missing, then installs the CLI globally from npm:
+You can pipe the repository install script into `bash`. It installs Node.js with
+[nvm](https://github.com/nvm-sh/nvm) when `node` is not available, enables Corepack, installs the
+[GitHub CLI](https://cli.github.com/) when it is missing, then installs the CLI globally from npm:
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/patternfly/patternfly-cli/main/scripts/install.sh | bash
@@ -21,7 +24,8 @@ curl -fsSL https://raw.githubusercontent.com/patternfly/patternfly-cli/main/scri
 Swap `main` for another branch or tag if you need a specific revision. To save the script and inspect it before running:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/patternfly/patternfly-cli/main/scripts/install.sh -o install-patternfly-cli.sh
+curl -fsSL https://raw.githubusercontent.com/patternfly/patternfly-cli/main/scripts/install.sh \
+  -o install-patternfly-cli.sh
 bash install-patternfly-cli.sh
 ```
 
@@ -39,7 +43,8 @@ npm install -g @patternfly/patternfly-cli
 
 ### Uninstall script (macOS and Linux)
 
-You can pipe the repository uninstall script into `bash`. It removes the globally installed `@patternfly/patternfly-cli` package with npm. It does **not** remove Node.js, nvm, Corepack, or GitHub CLI.
+You can pipe the repository uninstall script into `bash`. It removes the globally installed
+`@patternfly/patternfly-cli` package with npm. It does **not** remove Node.js, nvm, Corepack, or GitHub CLI.
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/patternfly/patternfly-cli/main/scripts/uninstall.sh | bash
@@ -48,7 +53,8 @@ curl -fsSL https://raw.githubusercontent.com/patternfly/patternfly-cli/main/scri
 Swap `main` for another branch or tag if you need a specific revision. To save the script and inspect it before running:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/patternfly/patternfly-cli/main/scripts/uninstall.sh -o uninstall-patternfly-cli.sh
+curl -fsSL https://raw.githubusercontent.com/patternfly/patternfly-cli/main/scripts/uninstall.sh \
+  -o uninstall-patternfly-cli.sh
 bash uninstall-patternfly-cli.sh
 ```
 
@@ -62,7 +68,9 @@ npm uninstall -g @patternfly/patternfly-cli
 
 ## Prerequisites
 
-If you use the [install script](#install-script-macos-and-linux) on macOS or Linux, it covers the items below (you may still need administrator access for system packages). Otherwise, install the following yourself before using the CLI:
+If you use the [install script](#install-script-macos-and-linux) on macOS or Linux, it covers the items below
+(you may still need administrator access for system packages). Otherwise, install the following yourself before using
+the CLI:
 
 - **Node.js and npm** (v20–24) — [npm](https://www.npmjs.com/) · [Node.js downloads](https://nodejs.org/)
 - **Corepack** — enable with `corepack enable` (included with Node.js). Run the command after installing npm.
@@ -81,7 +89,9 @@ patternfly-cli [command]
 - **`create`**: Create a new project from the available templates.
 - **`list`**: List all available templates (built-in and optional custom).
 - **`update`**: Update your project to a newer version.
-- **`cli-upgrade`**: Upgrade the globally installed CLI to the latest npm release. It runs `npm install -g @patternfly/patternfly-cli@latest`; use your package manager’s equivalent if you did not install with npm.
+- **`cli-upgrade`**: Upgrade the globally installed CLI to the latest npm release. It runs
+  `npm install -g @patternfly/patternfly-cli@latest`; use your package manager’s equivalent if you did not install
+  with npm.
 - **`init`**: Initialize a git repository and optionally create a GitHub repository.
 - **`save`**: Commit and push changes to the current branch.
 - **`load`**: Pull the latest updates from GitHub.
@@ -89,7 +99,9 @@ patternfly-cli [command]
 
 ### Custom templates
 
-You can add your own templates in addition to the built-in ones by passing a JSON file with the `--template-file` (or `-t`) option. Custom templates are merged with the built-in list; if a custom template has the same `name` as a built-in one, the custom definition is used.
+You can add your own templates in addition to the built-in ones by passing a JSON file with the `--template-file`
+(or `-t`) option. Custom templates are merged with the built-in list; if a custom template has the same `name` as a
+built-in one, the custom definition is used.
 
 **Create with custom templates:**
 
@@ -123,7 +135,6 @@ patternfly-cli list --template-file ./my-templates.json
 - **`options`** (optional): Array of extra arguments for `git clone` (e.g. `["--single-branch", "--branch", "main"]`).
 - **`packageManager`** (optional): `npm`, `yarn`, or `pnpm`; defaults to `npm` if omitted.
 
-
 ## Development / Installation
 
 ### Install Dependencies
@@ -152,8 +163,12 @@ After that you can now execute the cli via ```patternfly-cli``` command in the t
 
 ### Releasing
 
-This project uses [semantic-release](https://semantic-release.gitbook.io/) to automate versioning and releases based on [Conventional Commits](https://www.conventionalcommits.org/).
+This project uses [semantic-release](https://semantic-release.gitbook.io/) to automate versioning and releases
+based on [Conventional Commits](https://www.conventionalcommits.org/).
 
-- **CI**: Pushing to `main` runs the release workflow. If there are commits that warrant a release (e.g. `feat:`, `fix:`, `BREAKING CHANGE:`), it will create a GitHub release, update `CHANGELOG.md`, and bump the version in `package.json`.
+- **CI**: Pushing to `main` runs the release workflow. If there are commits that warrant a release (e.g. `feat:`,
+  `fix:`, `BREAKING CHANGE:`), it will create a GitHub release, update `CHANGELOG.md`, and bump the version in
+  `package.json`.
 - **Local dry run**: `npx semantic-release --dry-run` (no push or publish).
-- **npm publish**: By default only GitHub releases are created. To publish to npm, set the `NPM_TOKEN` secret in the repo and set `"npmPublish": true` for the `@semantic-release/npm` plugin in `.releaserc.json`.
+- **npm publish**: By default only GitHub releases are created. To publish to npm, set the `NPM_TOKEN` secret in the
+  repo and set `"npmPublish": true` for the `@semantic-release/npm` plugin in `.releaserc.json`.

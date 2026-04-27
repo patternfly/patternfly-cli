@@ -13,7 +13,7 @@ import {
   checkGhAuth,
   repoExists,
   createRepo,
-} from '../github.js';
+} from '../src/github.js';
 import { execa as mockExeca } from 'execa';
 
 describe('sanitizeRepoName', () => {

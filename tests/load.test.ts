@@ -12,7 +12,7 @@ jest.mock('execa', () => ({
 
 import fs from 'fs-extra';
 import { execa } from 'execa';
-import { runLoad } from '../load.js';
+import { runLoad } from '../src/load.js';
 
 const mockPathExists = fs.pathExists as jest.MockedFunction<typeof fs.pathExists>;
 const mockExeca = execa as jest.MockedFunction<typeof execa>;

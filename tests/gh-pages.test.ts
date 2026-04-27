@@ -19,7 +19,7 @@ jest.mock('gh-pages', () => ({
   },
 }));
 
-jest.mock('../github.js', () => ({
+jest.mock('../src/github.js', () => ({
   checkGhAuth: jest.fn().mockResolvedValue({ ok: false }),
 }));
 
@@ -32,7 +32,7 @@ import {
   getGitHubPagesSiteUrl,
   normalizeDeployBasePath,
   runDeployToGitHubPages,
-} from '../gh-pages.js';
+} from '../src/gh-pages.js';
 
 const mockPathExists = fs.pathExists as jest.MockedFunction<typeof fs.pathExists>;
 const mockReadJson = fs.readJson as jest.MockedFunction<typeof fs.readJson>;

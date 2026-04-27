@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: PatternFly Documentation
+    url: https://www.patternfly.org/
+    about: Visit the official PatternFly documentation
+  - name: PatternFly Community
+    url: https://github.com/patternfly
+    about: Explore other PatternFly projects and resources
