@@ -14,6 +14,7 @@ import { runLoad } from './load.js';
 import { runDeployToGitHubPages } from './gh-pages.js';
 import { readPackageVersion } from './read-package-version.js';
 import { promptAndSetLocalGitUser } from './git-user-config.js';
+import { runPrototype } from './prototype.js';
 
 const packageJsonPath = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'package.json');
 const packageVersion = readPackageVersion(packageJsonPath);
@@ -195,6 +196,25 @@ program
         branch: options.branch,
         basePath: options.base,
       });
+    } catch (error) {
+      if (error instanceof Error) {
+        console.error(`\n❌ ${error.message}\n`);
+      } else {
+        console.error(error);
+      }
+      process.exit(1);
+    }
+  });
+
+/** Command to enable prototype mode by adding grayscale CSS import */
+program
+  .command('prototype')
+  .description('Add prototype grayscale CSS import to the main React index file')
+  .argument('[path]', 'Path to the project (defaults to current directory)')
+  .action(async (projectPath) => {
+    const cwd = projectPath ? path.resolve(projectPath) : process.cwd();
+    try {
+      await runPrototype(cwd);
     } catch (error) {
       if (error instanceof Error) {
         console.error(`\n❌ ${error.message}\n`);
