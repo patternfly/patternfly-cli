@@ -20,7 +20,7 @@ jest.mock('glob', () => ({
 import path from 'path';
 import fs from 'fs-extra';
 import { glob } from 'glob';
-import { runPrototype } from '../src/prototype.js';
+import { runPrototype } from '../prototype.js';
 
 const mockPathExists = fs.pathExists as jest.MockedFunction<typeof fs.pathExists> & jest.Mock;
 const mockReadFile = fs.readFile as jest.MockedFunction<typeof fs.readFile> & jest.Mock;
