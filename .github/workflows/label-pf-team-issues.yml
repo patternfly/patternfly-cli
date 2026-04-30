@@ -1,5 +1,9 @@
 name: Label PF Team issues
 
+permissions:
+  contents: read
+  issues: write
+
 on:
   issues:
     types:
