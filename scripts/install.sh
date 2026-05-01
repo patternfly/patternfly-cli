@@ -248,7 +248,7 @@ main() {
   printf 'To see available commands, run the CLI with:\n'
   printf '  patternfly-cli --help\n'
   printf '\n'
-  printf 'alternatively you can use the alias "pfcli" instead of "pattenfly-cli"\n'
+  printf 'Alternatively, you can use the alias "pfcli" instead of "patternfly-cli"\n'
   printf '\n'
   printf '  pfcli --help\n'
   printf '\n'
