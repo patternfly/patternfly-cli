@@ -7,14 +7,26 @@
   "publishConfig": {
     "access": "public"
   },
-  "main": "dist/cli.js",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "type": "module",
   "bin": {
     "patternfly-cli": "./dist/cli.js",
     "pfcli": "./dist/cli.js"
   },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./components": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./prototype.css": "./dist/prototype.css"
+  },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && cp src/prototype.css dist/prototype.css",
     "start": "node dist/cli.js",
     "test": "jest",
     "semantic-release": "semantic-release",
@@ -55,10 +67,17 @@
     "commander": "^12.1.0",
     "execa": "^9.3.0",
     "fs-extra": "^11.2.0",
+    "glob": "^11.0.0",
     "inquirer": "^9.3.5"
+  },
+  "peerDependencies": {
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0",
+    "@patternfly/react-core": "^5.0.0 || ^6.0.0"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@patternfly/react-core": "^6.4.3",
     "@semantic-release/changelog": "^6.0.3",
     "@semantic-release/commit-analyzer": "^13.0.1",
     "@semantic-release/git": "^10.0.1",
@@ -71,8 +90,12 @@
     "@types/inquirer": "^9.0.9",
     "@types/jest": "^30.0.0",
     "@types/node": "^24.10.1",
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
     "eslint": "^10.0.2",
     "jest": "^29.7.0",
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0",
     "semantic-release": "^24.2.0",
     "ts-jest": "^29.4.5",
     "typescript": "^5.9.3",
