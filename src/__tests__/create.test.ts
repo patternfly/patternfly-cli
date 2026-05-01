@@ -152,7 +152,7 @@ describe('runCreate', () => {
     expect(mockExeca).toHaveBeenNthCalledWith(
       1,
       'git',
-      ['clone', starter!.repo, projectPath],
+      ['clone', ...(starter!.options ?? []), starter!.repo, projectPath],
       expect.objectContaining({ stdio: 'inherit' })
     );
   });
@@ -166,7 +166,7 @@ describe('runCreate', () => {
     expect(mockExeca).toHaveBeenNthCalledWith(
       1,
       'git',
-      ['clone', starter!.repoSSH, projectPath],
+      ['clone', ...(starter!.options ?? []), starter!.repoSSH, projectPath],
       expect.objectContaining({ stdio: 'inherit' })
     );
   });
@@ -225,7 +225,7 @@ describe('runCreate', () => {
 
     expect(mockExeca).toHaveBeenNthCalledWith(
       2,
-      'yarn',
+      'npm',
       ['install'],
       expect.objectContaining({ cwd: projectPath, stdio: 'inherit' })
     );

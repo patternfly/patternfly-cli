@@ -2,6 +2,11 @@
 # Install Node (via nvm + Node.js 24 when Node is missing), enable Corepack,
 # install GitHub CLI when missing, and install @patternfly/patternfly-cli globally.
 
+# Ensure this script runs in bash, even if invoked with zsh
+if [ -z "${BASH_VERSION:-}" ]; then
+  exec bash "$0" "$@"
+fi
+
 set -euo pipefail
 
 if [ -z "${HOME:-}" ]; then
@@ -48,6 +53,40 @@ ensure_nvm_loaded() {
   return 1
 }
 
+setup_nvm_for_zsh() {
+  # Add nvm to .zshrc only if zsh is the user's default shell
+  if [ -z "${SHELL:-}" ]; then
+    return 0
+  fi
+
+  case "$SHELL" in
+    */zsh)
+      ;;
+    *)
+      return 0
+      ;;
+  esac
+
+  local zshrc="${HOME}/.zshrc"
+  if [ ! -f "$zshrc" ]; then
+    touch "$zshrc"
+  fi
+
+  if grep -q 'NVM_DIR' "$zshrc" 2>/dev/null; then
+    info "nvm is already configured in ${zshrc}"
+    return 0
+  fi
+
+  info "Adding nvm to ${zshrc} for zsh compatibility."
+  cat >> "$zshrc" << 'EOF'
+
+# Load nvm (Node Version Manager)
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+EOF
+}
+
 install_node_via_nvm() {
   info "Node.js not found. Installing nvm (${NVM_VERSION}) and Node.js 24."
   if ! require_cmd curl && ! require_cmd wget; then
@@ -70,6 +109,8 @@ install_node_via_nvm() {
   nvm install 24 || error "nvm failed to install Node.js 24."
   nvm use 24 || error "nvm failed to activate Node.js 24."
   nvm alias default 24 2>/dev/null || true
+
+  setup_nvm_for_zsh
 
   info "Node.js $(node --version) and npm $(npm --version) are ready (npm ships with this Node release)."
 }
@@ -245,6 +286,9 @@ main() {
   ensure_gh
   install_patternfly_cli
 
+  printf '\n'
+  printf 'SUCCESS: PatternFly CLI is installed.\n'
+  printf '\n'
   printf 'To see available commands, run the CLI with:\n'
   printf '  patternfly-cli --help\n'
   printf '\n'
@@ -252,9 +296,11 @@ main() {
   printf '\n'
   printf '  pfcli --help\n'
   printf '\n'
-  printf 'SUCCESS: PatternFly CLI is installed.\n'
+  printf 'NOTE: If the command is not found, restart your terminal or run:\n'
+  printf '  source ~/.zshrc    # for zsh users\n'
+  printf '  source ~/.bashrc   # for bash users\n'
   printf '\n'
-  
+
 }
 
 main "$@"
