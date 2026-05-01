@@ -11,7 +11,7 @@
   "type": "module",
   "bin": {
     "patternfly-cli": "./dist/cli.js",
-    "pf": "./dist/cli.js"
+    "pfcli": "./dist/cli.js"
   },
   "scripts": {
     "build": "tsc",
