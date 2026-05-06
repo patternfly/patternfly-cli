@@ -54,7 +54,7 @@
     "gh-pages": "^6.3.0",
     "commander": "^12.1.0",
     "execa": "^9.3.0",
-    "fs-extra": "^11.2.0",
+    "fs-extra": "^11.3.4",
     "inquirer": "^9.3.5"
   },
   "devDependencies": {
