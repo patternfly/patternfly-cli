@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: PatternFly documentation
+    url: https://www.patternfly.org/
+    about: Design system and product documentation
+  - name: PatternFly React
+    url: https://github.com/patternfly/patternfly-react
+    about: PatternFly React component library

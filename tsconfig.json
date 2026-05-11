@@ -1,36 +1,23 @@
 {
-  // Visit https://aka.ms/tsconfig to read more about this file
   "compilerOptions": {
     "module": "NodeNext",
     "moduleResolution": "nodenext",
-    // File Layout
     "rootDir": "./src",
     "outDir": "./dist",
-    // Environment Settings
-    // See also https://aka.ms/tsconfig/module
     "target": "esnext",
-    "lib": [
-      "esnext"
-    ],
-    "types": [
-      "node",
-      "jest"
-    ],
-    // Other Outputs
+    "lib": ["esnext"],
+    "types": ["node", "jest"],
     "sourceMap": true,
     "declaration": true,
     "declarationMap": true,
-    // Stricter Typechecking Options
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
-    // Style Options
     "noImplicitReturns": true,
     "noImplicitOverride": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "noPropertyAccessFromIndexSignature": true,
-    // Recommended Options
     "strict": true,
     "jsx": "react-jsx",
     "verbatimModuleSyntax": true,
@@ -41,10 +28,6 @@
     "noImplicitAny": false,
     "esModuleInterop": true
   },
-  "include": [
-    "src/**/*"
-  ],
-  "exclude": [
-    "src/__tests__/**/*.test.ts"
-  ]
+  "include": ["src/**/*"],
+  "exclude": ["src/__tests__/**/*.test.ts"]
 }
