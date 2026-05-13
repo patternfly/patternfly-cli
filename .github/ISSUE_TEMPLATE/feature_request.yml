@@ -1,0 +1,37 @@
+name: Feature request
+description: Suggest a new command, flag, or improvement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Describe the problem you are solving and how this CLI could help.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / use case
+      description: What workflow or limitation led to this request?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Commands, UX, or behavior you have in mind.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+    validations:
+      required: false
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+    validations:
+      required: false

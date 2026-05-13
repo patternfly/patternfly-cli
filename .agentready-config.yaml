@@ -1,0 +1,14 @@
+# AgentReady — https://github.com/ambient-code/agentready
+# Run from repo root:
+#   agentready assess -c .agentready-config.yaml .
+#
+# cyclomatic_complexity is implemented via the Python CLI "lizard". This
+# package is Node/TypeScript-only; without lizard on PATH the check shows as
+# skipped. Complexity is still limited by ESLint and code review. To inspect
+# locally: pip install lizard && lizard src
+#
+# standard_layout expects a root tests/ or test/ directory. This repo keeps
+# Jest suites under src/__tests__/ by decision — see docs/adr/0002-tests-under-src-instead-of-root-tests.md
+excluded_attributes:
+  - cyclomatic_complexity
+  - standard_layout
