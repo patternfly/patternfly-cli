@@ -33,7 +33,7 @@ async function getUpstreamRemote(cwd: string): Promise<string> {
     throw new Error('No upstream or origin remote found');
   } catch (error) {
     if (error instanceof Error) {
-      throw new Error(`Failed to determine upstream remote: ${error.message}`);
+      throw new Error(`Failed to determine upstream remote: ${error.message}`, { cause: error });
     }
     throw error;
   }
@@ -62,7 +62,7 @@ async function getLatestPrereleaseTag(cwd: string, remote: string): Promise<stri
     return sortedTagList[sortedTagList.length - 1] || null;
   } catch (error) {
     if (error instanceof Error) {
-      throw new Error(`Failed to get latest prerelease tag: ${error.message}`);
+      throw new Error(`Failed to get latest prerelease tag: ${error.message}`, { cause: error });
     }
     throw error;
   }
