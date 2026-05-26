@@ -86,6 +86,7 @@ patternfly-cli [command]
 - **`save`**: Commit and push changes to the current branch.
 - **`load`**: Pull the latest updates from GitHub.
 - **`deploy`**: Build and deploy your app to GitHub Pages.
+- **`bump-prerelease`**: Create and push the next prerelease tag for semantic-release. Finds the latest prerelease tag (e.g., `prerelease-v5.0.0-prerelease.0`), increments the minor version by default (e.g., `prerelease-v5.1.0-prerelease.0`), or the major version with `--major` (e.g., `prerelease-v6.0.0-prerelease.0`). This triggers semantic-release to start publishing new prerelease versions. Use `--dry-run` to preview what would happen without making changes.
 
 ### Custom templates
 
