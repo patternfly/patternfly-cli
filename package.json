@@ -55,11 +55,21 @@
     ]
   },
   "dependencies": {
-    "gh-pages": "^6.3.0",
+    "@patternfly/context-for-ai": "^1.2.0",
     "commander": "^12.1.0",
-    "fs-extra": "^11.3.4",
     "execa": "^9.6.1",
-    "inquirer": "^9.3.5"
+    "fs-extra": "^11.3.4",
+    "gh-pages": "^6.3.0",
+    "inquirer": "^9.3.5",
+    "jscodeshift": "^17.3.0"
+  },
+  "overrides": {
+    "jscodeshift": {
+      "tmp": "^0.2.7"
+    },
+    "micromatch": {
+      "picomatch": "^2.3.2"
+    }
   },
   "devDependencies": {
     "@commitlint/cli": "^20.3.1",

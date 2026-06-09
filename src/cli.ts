@@ -12,6 +12,7 @@ import { runCreate } from './create.js';
 import { runSave } from './save.js';
 import { runLoad } from './load.js';
 import { runDeployToGitHubPages } from './gh-pages.js';
+import { runAddAiContext } from './add-ai-context.js';
 import { readPackageVersion } from './read-package-version.js';
 import { promptAndSetLocalGitUser } from './git-user-config.js';
 import { runBumpPrerelease } from './bump-prerelease.js';
@@ -145,6 +146,33 @@ program
     }
     
     console.log('\n✨ All updates completed successfully! ✨');
+  });
+
+/** Command to run the PatternFly context-for-ai codemod (semantic data-* attributes) */
+program
+  .command('add-ai-context')
+  .description(
+    'Run the @patternfly/context-for-ai codemod to add semantic data-* attributes to PatternFly components',
+  )
+  .argument('[path]', 'Directory or file to transform (defaults to "src")')
+  .option('--dry', 'Preview changes without writing files')
+  .action(async (targetPath, options) => {
+    const cwd = process.cwd();
+    try {
+      await runAddAiContext({
+        cwd,
+        targetPath: targetPath ?? 'src',
+        dryRun: Boolean(options.dry),
+      });
+      console.log('\n✨ Context-for-AI codemod finished.');
+    } catch (error) {
+      if (error instanceof Error) {
+        console.error(`\n❌ ${error.message}\n`);
+      } else {
+        console.error(error);
+      }
+      process.exit(1);
+    }
   });
 
 /** Command to save changes: check for changes, prompt to commit, and push */
