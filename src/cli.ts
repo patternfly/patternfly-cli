@@ -14,6 +14,7 @@ import { runLoad } from './load.js';
 import { runDeployToGitHubPages } from './gh-pages.js';
 import { readPackageVersion } from './read-package-version.js';
 import { promptAndSetLocalGitUser } from './git-user-config.js';
+import { runBumpPrerelease } from './bump-prerelease.js';
 
 const packageJsonPath = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'package.json');
 const packageVersion = readPackageVersion(packageJsonPath);
@@ -195,6 +196,27 @@ program
         branch: options.branch,
         basePath: options.base,
       });
+    } catch (error) {
+      if (error instanceof Error) {
+        console.error(`\n❌ ${error.message}\n`);
+      } else {
+        console.error(error);
+      }
+      process.exit(1);
+    }
+  });
+
+/** Command to bump prerelease version for semantic-release */
+program
+  .command('bump-prerelease')
+  .description('Create and push next prerelease tag (increments minor version by default) for semantic-release')
+  .argument('[path]', 'Path to the repository (defaults to current directory)')
+  .option('--dry-run', 'Show what would be done without making any changes')
+  .option('--major', 'Bump major version instead of minor version')
+  .action(async (repoPath, options) => {
+    const cwd = repoPath ? path.resolve(repoPath) : process.cwd();
+    try {
+      await runBumpPrerelease(cwd, { dryRun: options.dryRun, major: options.major });
     } catch (error) {
       if (error instanceof Error) {
         console.error(`\n❌ ${error.message}\n`);
