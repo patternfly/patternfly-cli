@@ -13,6 +13,7 @@ import { runSave } from './save.js';
 import { runLoad } from './load.js';
 import { runDeployToGitHubPages } from './gh-pages.js';
 import { runAddAiContext } from './add-ai-context.js';
+import { runAddDesignComments } from './add-design-comments.js';
 import { readPackageVersion } from './read-package-version.js';
 import { promptAndSetLocalGitUser } from './git-user-config.js';
 import { runBumpPrerelease } from './bump-prerelease.js';
@@ -146,6 +147,28 @@ program
     }
     
     console.log('\n✨ All updates completed successfully! ✨');
+  });
+
+/** Command to install and integrate @patternfly/design-comments */
+program
+  .command('add-design-comments')
+  .description(
+    'Install @patternfly/design-comments and integrate the commenting overlay into a React project',
+  )
+  .argument('[path]', 'Path to the project (defaults to current directory)')
+  .option('--git-init', 'Prompt for git user.name and user.email and store them locally for this repository')
+  .action(async (projectPath, options) => {
+    const cwd = projectPath ? path.resolve(projectPath) : process.cwd();
+    try {
+      await runAddDesignComments({ cwd, gitInit: Boolean(options.gitInit) });
+    } catch (error) {
+      if (error instanceof Error) {
+        console.error(`\n❌ ${error.message}\n`);
+      } else {
+        console.error(error);
+      }
+      process.exit(1);
+    }
   });
 
 /** Command to run the PatternFly context-for-ai codemod (semantic data-* attributes) */
